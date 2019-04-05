@@ -1,4 +1,4 @@
-# Generated from /Users/zhangzhiqiang/PycharmProjects/test/MySqlParser.g4 by ANTLR 4.7.2
+# Generated from /Users/zhangzhiqiang/PycharmProjects/test/PyLinq/MySqlParser.g4 by ANTLR 4.7.2
 from antlr4 import *
 if __name__ is not None and "." in __name__:
     from .MySqlParser import MySqlParser
@@ -8,11 +8,6 @@ else:
 # This class defines a complete generic visitor for a parse tree produced by MySqlParser.
 
 class MySqlParserVisitor(ParseTreeVisitor):
-
-    # Visit a parse tree produced by MySqlParser#selectRootStatament.
-    def visitSelectRootStatament(self, ctx:MySqlParser.SelectRootStatamentContext):
-        return self.visitChildren(ctx)
-
 
     # Visit a parse tree produced by MySqlParser#simpleSelect.
     def visitSimpleSelect(self, ctx:MySqlParser.SimpleSelectContext):

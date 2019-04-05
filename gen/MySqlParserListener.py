@@ -1,4 +1,4 @@
-# Generated from /Users/zhangzhiqiang/PycharmProjects/test/MySqlParser.g4 by ANTLR 4.7.2
+# Generated from /Users/zhangzhiqiang/PycharmProjects/test/PyLinq/MySqlParser.g4 by ANTLR 4.7.2
 from antlr4 import *
 if __name__ is not None and "." in __name__:
     from .MySqlParser import MySqlParser
@@ -7,15 +7,6 @@ else:
 
 # This class defines a complete listener for a parse tree produced by MySqlParser.
 class MySqlParserListener(ParseTreeListener):
-
-    # Enter a parse tree produced by MySqlParser#selectRootStatament.
-    def enterSelectRootStatament(self, ctx:MySqlParser.SelectRootStatamentContext):
-        pass
-
-    # Exit a parse tree produced by MySqlParser#selectRootStatament.
-    def exitSelectRootStatament(self, ctx:MySqlParser.SelectRootStatamentContext):
-        pass
-
 
     # Enter a parse tree produced by MySqlParser#simpleSelect.
     def enterSimpleSelect(self, ctx:MySqlParser.SimpleSelectContext):

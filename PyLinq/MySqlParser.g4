@@ -2,11 +2,6 @@ parser grammar MySqlParser;
 
 options { tokenVocab=MySqlLexer; }
 
-// 0
-selectRootStatament:
-    queryExpression+
-    ;
-
 // 1
 selectStatement
     : querySpecification                                            #simpleSelect

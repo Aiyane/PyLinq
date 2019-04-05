@@ -348,7 +348,6 @@ def run(sql_expr: str, data_sources: dict):
     stream = CommonTokenStream(lexer)
     parser = MySqlParser(stream)
     visitor = MySqlVisitor()
-    # tree = parser.selectRootStatament()
     tree = parser.queryExpression()
     visitor.visit(tree)
     queue = visitor.select_statements_queue
@@ -360,6 +359,6 @@ def run(sql_expr: str, data_sources: dict):
         sql_expr: SelectStatement = queue.get()
         result = sql_interpreter(sql_expr.tree, data_sources)
         __SQL_RESULT__[sql_expr.id] = result
-    print(time.time() - now)
+    print('运行时间:', time.time() - now)
     # ===========================================
     return result
