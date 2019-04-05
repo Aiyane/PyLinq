@@ -1,8 +1,10 @@
 import logging
-from decorator import register_func
+from PyLinq.decorator import register_func
+
+__all__ = ['avg_warp', 'max_wrap', 'min_wrap', 'count_wrap', 'sum_wrap']
 
 
-@register_func("avg")
+@register_func("avg", is_aggr=True)
 def avg_warp():
     size = s = 0
 
@@ -27,7 +29,7 @@ def avg_warp():
     return avg
 
 
-@register_func("max")
+@register_func("max", is_aggr=True)
 def max_wrap():
     max_val = float('-inf')
 
@@ -49,7 +51,7 @@ def max_wrap():
     return my_max
 
 
-@register_func("min")
+@register_func("min", is_aggr=True)
 def min_wrap():
     min_val = float('inf')
 
@@ -65,13 +67,13 @@ def min_wrap():
             if val < min_val:
                 min_val = val
         except TypeError as e:
-            logging.warning('MinAggr: {e}')
+            logging.warning(f'MinAggr: {e}')
         return min_val
 
     return my_min
 
 
-@register_func("count")
+@register_func("count", is_aggr=True)
 def count_wrap():
     count_val = 0
 
@@ -82,7 +84,7 @@ def count_wrap():
     return count
 
 
-@register_func("sum")
+@register_func("sum", is_aggr=True)
 def sum_wrap():
     s = 0
 

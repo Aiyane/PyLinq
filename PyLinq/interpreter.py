@@ -3,130 +3,11 @@ from antlr4 import CommonTokenStream, InputStream
 from gen.MySqlLexer import MySqlLexer
 from gen.MySqlParser import MySqlParser
 
-from visitor import MySqlVisitor
-from proxy import FuncProxy
-from nodes import *
+from PyLinq.visitor import MySqlVisitor
+from PyLinq.proxy import FuncProxy
+from PyLinq.nodes import *
 
 agg_funcs = dict()
-
-
-def _compare(orders: list, item: dict, other: dict, gt: bool) -> bool:
-    for order, table_name, attr in orders:
-        v1 = item[table_name][other]
-        v2 = other[table_name][other]
-        if v1 > v2:
-            if gt:
-                return True if order == 0 else False
-            else:
-                return False if order == 0 else True
-        if v1 <= v2:
-            if gt:
-                return False if order == 0 else True
-            else:
-                return True if order == 0 else False
-
-
-class QuerySet:
-    def __init__(self, group_expr, order_expr, select_expr):
-        """
-        res 存放结果数据
-        ids 给 group 分组用，存放主键
-        length 结果长度
-        group [
-            [0, table_name, attr],  # 第一个参数: 0正序,1倒叙 第二个参数: 表名 第三个参数: 表字段
-            [1, table_name, attr],  # 例如 [0, 'Teacher', 'name'] 意味按照 'Teacher' 表的 'name' 字段正序排列, 并分组
-            [0, table_name, attr]   # 按顺序比较, 先比较前面的, 如果相等再比较后面的。
-        ]
-        order [
-            [0, table_name, attr],  # 第一个参数: 0正序,1倒叙 第二个参数: 表名 第三个参数: 表字段
-            [1, table_name, attr],  # 例如 [0, 'Teacher', 'name'] 意味按照 'Teacher' 表的 'name' 字段正序排列,
-            [0, table_name, attr]   # 按顺序比较, 先比较前面的, 如果相等再比较后面的。
-        ]
-        select (
-            distinct,  # 是否分组，暂不支持！！！！！！，bool
-            star,      # `*` 表达式表示全选，bool
-            *args      # 其他参数，例如函数、字段名等
-        )
-        """
-        self.res = []
-        self.ids = set()
-        self.length = 0
-        self.group = [get_expr(sub_group) for sub_group in group_expr] if group_expr else []
-        self.order = [get_expr(sub_order) for sub_order in order_expr] if order_expr else []
-        self.select = select_expr
-        for expr in select_expr[2:]:
-            if isinstance(expr, SQLToken) and expr.tag == AGGFUNC:
-                agg_funcs[expr.args[0]] = FuncProxy.get(expr.args[0])
-
-    def _gt(self, item, other) -> bool:
-        """
-        other/item: {
-            'student': {'name': 'jay_chou', 'age': 40},
-            'teacher': {'name': 'zzzz', 'year': 5}
-        } 这样的数据, 每一张表只取一行, 凑成的一条数据
-        """
-        if self.order:
-            return _compare(self.order, item, other, True)
-        else:
-            return _compare(self.group, item, other, True)
-
-    def _lte(self, item, other) -> bool:
-        """
-        other/item: {
-            'student': {'name': 'jay_chou', 'age': 40},
-            'teacher': {'name': 'zzzz', 'year': 5}
-        } 这样的数据, 每一张表只取一行, 凑成的一条数据
-        """
-        if self.order:
-            return _compare(self.order, item, other, False)
-        else:
-            return _compare(self.group, item, other, False)
-
-    def _append(self, item, start, end):
-        """ 二分法插入数据
-        item: {
-            'student': {'name': 'jay_chou', 'age': 40},
-            'teacher': {'name': 'zzzz', 'year': 5}
-        } 这样的数据, 每一张表只取一行, 凑成的一条数据
-        """
-        if start == end:
-            if self._lte(self.res[start], item):
-                if start == self.length:
-                    self.res.append(visit_select(self.select, item))
-                else:
-                    self.res.insert(start+1, visit_select(self.select, item))
-            else:
-                self.res.insert(start-1, visit_select(self.select, item))
-        mid = (start + end) // 2
-        if self._gt(self.res[mid], item) and self._lte(self.res[mid-1], item):
-            self.res.append(visit_select(self.select, item))
-        elif self._gt(self.res[mid-1], item):
-            self._append(item, start, mid - 1)
-        elif self._lte(self.res[mid], item):
-            self._append(item, mid, end)
-
-    def append(self, item):
-        """
-        item: {
-            'student': {'name': 'jay_chou', 'age': 40},
-            'teacher': {'name': 'zzzz', 'year': 5}
-        } 这样的数据, 每一张表只取一行, 凑成的一条数据
-        """
-        if not self.group:
-            if self.order:
-                self._append(item, 0, self.length)
-            else:
-                self.res.append(visit_select(self.select, item))
-            self.length += 1
-        else:
-            pk = tuple(item[table_name][attr] for order, table_name, attr in self.group)
-            if pk not in self.ids:
-                self.ids.add(pk)
-                if self.order:
-                    self._append(item, 0, self.length)
-                else:
-                    self._append(item, 0, self.length)
-                self.length += 1
 
 
 def get_expr(expr):
@@ -137,7 +18,7 @@ def get_expr(expr):
         return None
     if isinstance(expr, SQLToken):
         return get_expr_dict[expr.tag](expr)
-    return get_expr_dict[expr.__dict__.__name__.lower()](expr)
+    return get_expr_dict[expr.__class__](expr)
 
 
 def get_var(var_expr: VAR) -> list:
@@ -248,18 +129,25 @@ def visit_select(select_expr: tuple, data_sources) -> dict:
             for key, value in values.items():
                 res[key] = value
         return res
-    else:
-        for expr in select_expr[2:]:
-            if isinstance(expr, SQLToken) and expr.tag == FUNC:
-                res[expr.args[0]] = visit(expr, data_sources)
+
+    for i, expr in enumerate(select_expr[2:]):
+        if has_aggfunc(expr):
+            if expr.tag == AS:
+                key, value = visit_as(expr, data_sources, str(i))
             else:
-                key, value = visit(expr, data_sources)
-                res[key] = value
-        return res
+                key, value = expr.args[0], visit_aggfunc(expr, data_sources, str(i))
+            res[key] = value
+        elif isinstance(expr, SQLToken) and expr.tag == FUNC:
+            res[expr.args[0]] = visit(expr, data_sources)
+        else:
+            key, value = visit(expr, data_sources)
+            res[key] = value
+    return res
 
 
-def visit_as(as_expr: SQLToken, data_sources) -> tuple:
+def visit_as(as_expr: SQLToken, data_sources, str_i=None) -> tuple:
     """
+    :param str_i: 给聚合函数使用
     :param as_expr:
     :param data_sources: {
         'student': {'name': 'jay_chou', 'age': 40},
@@ -267,13 +155,23 @@ def visit_as(as_expr: SQLToken, data_sources) -> tuple:
     } 这样的数据, 每一张表只取一行, 凑成的一条数据
     :return:
     """
-    res = visit(as_expr.args[0], data_sources)
+    if str_i is None:
+        res = visit(as_expr.args[0], data_sources)
+    else:
+        if as_expr.args[0].tag == AGGFUNC:
+            res = visit_aggfunc(as_expr.args[0], data_sources, str_i)
+        elif as_expr.args[0].tag == AS:
+            _, res = visit_as(as_expr.args[0], data_sources, str_i)
+        else:
+            raise ValueError("语法错误！")
     rename = visit(as_expr.args[1], data_sources)
-    return rename, res[1]
+    return rename, res[1] if isinstance(as_expr.args[0], VAR) else res
 
 
 def visit_func(func_expr: SQLToken, data_sources):
     func = FuncProxy.get(func_expr.args[0])
+    if func is None:
+        raise TypeError(f"没有内置函数 `{func_expr.args[0]}`")
     args = []
     for arg in func_expr.args[1:]:
         _arg = visit(arg, data_sources)
@@ -281,9 +179,15 @@ def visit_func(func_expr: SQLToken, data_sources):
     return func(*args)
 
 
-def visit_aggfunc(aggfunc_expr: SQLToken, data_sources):
-    func = agg_funcs[aggfunc_expr.tag]
-    return func(*[visit(arg, data_sources) for arg in aggfunc_expr.args[1:]])
+def visit_aggfunc(aggfunc_expr: SQLToken, data_sources, str_i):
+    func = agg_funcs.get(aggfunc_expr.args[0] + str_i)
+    if func is None:
+        raise TypeError(f"没有内置函数 `{aggfunc_expr.args[0]}`")
+    args = []
+    for arg in aggfunc_expr.args[1:]:
+        _arg = visit(arg, data_sources)
+        args.append(_arg[1] if isinstance(arg, VAR) else _arg)
+    return func(*args)
 
 
 def visit_limit(limit_expr: SQLToken, res: list) -> list:
@@ -331,7 +235,7 @@ get_expr_dict = {
 }
 
 
-def main_loop(res_list: ResList, data_sources: dict, instance_dict, res: QuerySet) -> QuerySet:
+def main_loop(res_list: ResList, data_sources: dict, instance_dict, res: list) -> list:
     """
     :param res_list:
     :param data_sources: {
@@ -365,7 +269,7 @@ def main_loop(res_list: ResList, data_sources: dict, instance_dict, res: QuerySe
     return res
 
 
-def condition_filter(res_list: ResList, instance_dict, res: QuerySet) -> QuerySet:
+def condition_filter(res_list: ResList, instance_dict, res: list) -> list:
     """
     :param res_list:
     :param instance_dict: {
@@ -378,13 +282,38 @@ def condition_filter(res_list: ResList, instance_dict, res: QuerySet) -> QuerySe
     if res_list.condition:
         if res_list.having_expr:
             if visit(res_list.condition, instance_dict) and visit(res_list.having_expr, instance_dict):
-                res.append(instance_dict)
+                res.append(visit_select(res_list.select_expr, instance_dict))
         else:
             if visit(res_list.condition, instance_dict):
-                res.append(instance_dict)
+                res.append(visit_select(res_list.select_expr, instance_dict))
     else:
-        res.append(instance_dict)
+        res.append(visit_select(res_list.select_expr, instance_dict))
     return res
+
+
+def has_aggfunc(expr) -> bool:
+    if isinstance(expr, SQLToken):
+        if expr.tag == FUNC and expr[0] in FuncProxy.aggr:
+            return True
+        if expr.tag == AGGFUNC:
+            return True
+        if expr.tag == AS:
+            return has_aggfunc(expr.args[0])
+    return False
+
+
+def init_aggfuncs(expr, i=None):
+    if isinstance(expr, SQLToken) and i is not None:
+        if expr.tag == AGGFUNC:
+            agg_funcs[expr.args[0] + str(i)] = FuncProxy.get(expr.args[0])
+        elif expr.tag == FUNC and expr.args[0] in FuncProxy.aggr:
+            agg_funcs[expr.args[0] + str(i)] = FuncProxy.get(expr.args[0])
+        elif expr.tag == AS:
+            sub_expr = expr.args[0]
+            init_aggfuncs(sub_expr, i)
+    elif isinstance(expr, tuple):
+        for i, expr in enumerate(expr[2:]):
+            init_aggfuncs(expr, i)
 
 
 def sql_interpreter(sql_expr: SELECT, data_sources: dict) -> list:
@@ -395,12 +324,13 @@ def sql_interpreter(sql_expr: SELECT, data_sources: dict) -> list:
     """
     data_sources = visit(sql_expr.from_expr.tables, data_sources)
     from_expr = sql_expr.from_expr
-    res_list = ResList([], from_expr.condition, from_expr.having)
+    res_list = ResList([], from_expr.condition, from_expr.having, sql_expr.select)
     limit = sql_expr.limit
 
-    res = main_loop(res_list, data_sources, {}, QuerySet(from_expr.group,
-                                                         sql_expr.order,
-                                                         sql_expr.select)).res
+    # 构造聚合函数
+    init_aggfuncs(sql_expr.select)
+
+    res = main_loop(res_list, data_sources, {}, [])
     # 如果有聚合函数
     if agg_funcs:
         agg_funcs.clear()
@@ -423,8 +353,13 @@ def run(sql_expr: str, data_sources: dict):
     visitor.visit(tree)
     queue = visitor.select_statements_queue
     result = []
+    # =================打印时间===================
+    import time
+    now = time.time()
     while not queue.empty():
         sql_expr: SelectStatement = queue.get()
         result = sql_interpreter(sql_expr.tree, data_sources)
         __SQL_RESULT__[sql_expr.id] = result
+    print(time.time() - now)
+    # ===========================================
     return result

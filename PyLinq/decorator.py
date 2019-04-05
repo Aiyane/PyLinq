@@ -1,7 +1,7 @@
-from proxy import FuncProxy
+from PyLinq.proxy import FuncProxy
 
 
-def register_func(alias):
+def register_func(alias, is_aggr=False):
     """
     注册内建函数的装饰器
     :param alias: SQL 中该函数名
@@ -11,4 +11,6 @@ def register_func(alias):
     def _func(func):
         func_name = alias.lower() or func.__name__.lower()
         FuncProxy.add(func_name, func)
+        if is_aggr:
+            FuncProxy.aggr.add(func_name)
     return _func

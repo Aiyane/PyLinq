@@ -7,6 +7,7 @@ class FuncProxy:
     代理 SQL 内建函数类。
     sql_funcs: 保存 sql 中函数名为 key，funcs 包中相应的闭包函数为 value。
     """
+    aggr = set()
     sql_funcs = {
         'first': lambda: lambda x: x[0],
         'not': lambda: lambda x: not x,
@@ -26,6 +27,8 @@ class FuncProxy:
         'is_not': lambda: lambda x, y: x is not y,
         'in': lambda: lambda x, y: x in y,
         'not_in': lambda: lambda x, y: x not in y,
+        'or': lambda: lambda x, y: x or y,
+        'and': lambda: lambda x, y: x and y,
         '=': lambda: lambda x, y: x == y,
         '>=': lambda: lambda x, y: x >= y,
         '<=': lambda: lambda x, y: x <= y,

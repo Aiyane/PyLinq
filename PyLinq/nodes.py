@@ -34,7 +34,7 @@ LIMIT = NODE(10)  # offset, limit
 LINK = NODE(11)  # select_statement_id
 AGGFUNC = NODE(12)  # name, *args
 # 结果列表
-ResList = namedtuple('res_list', ('res', 'condition', 'having_expr'))
+ResList = namedtuple('res_list', ('res', 'condition', 'having_expr', 'select_expr'))
 
 # 删除引用
 del NewType, namedtuple

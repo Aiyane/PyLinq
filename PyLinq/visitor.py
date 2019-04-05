@@ -1,6 +1,6 @@
 from gen.MySqlParserVisitor import MySqlParserVisitor
 from gen.MySqlParser import MySqlParser
-from nodes import *
+from PyLinq.nodes import *
 from queue import Queue
 
 

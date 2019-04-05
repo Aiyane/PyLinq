@@ -1,4 +1,4 @@
-from interpreter import run
+from PyLinq.interpreter import run
 
 
 def main(sql_expr: str, data_sources: dict):
@@ -81,7 +81,4 @@ AND MOBILE.COMPANY_ID = COMPANY.ID AND COMPANY.ID = CEO.COMPANY_ID GROUP BY CEO.
             {'number': 20, 'age': 17}
         ]
     }
-    import time
-    now = time.time()
     main(test_sql_expr, test_data)
-    print(time.time() - now)
