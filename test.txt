@@ -1,0 +1,1284 @@
+SelectStatement = namedtuple('Root', ('id', 'tree'))
+SQLToken = namedtuple('Token', ('tag', 'args'))
+FROM = namedtuple('from_expr', ('tables', 'condition', 'group', 'having'))
+SELECT = namedtuple('select', ('from_expr', 'order', 'limit', 'select'))
+HAVING = namedtuple('having', ('where_or_from', 'group', 'having'))
+GROUP = namedtuple('group', ('where_or_from', 'group'))
+VAR = namedtuple('var', ('name', 'attr', 'func'))
+CONST = namedtuple('const', ('value',))
+UNKNOWN = namedtuple('unknown', ())
+
+# 节点
+NODE = NewType('NODE', str)
+DISTINCT = NODE('distinct')  # query_expression
+AS = NODE('as')  # name, str
+FUNC = NODE('func')  # name, *args
+TABLES = NODE('tables')  # tables
+CASE = NODE('case')  # [*(condition, consequent)]
+INNER = NODE('inner')  # tableSourceItem
+OUTER = NODE('outer')  # tag, tableSourceItem, expression
+ORDER = NODE('order')  # tuple(order_by_expressions)
+DESC = NODE('desc')  # expression
+LIMIT = NODE('limit')  # offset, limit
+LINK = NODE('link')  # select_statement_id
+AGGFUNC = NODE('aggfunc')  # name, *args
+
+# 渲染结果（目前）
+"""
+tree=select(
+    from_expr=from_expr(
+        tables=Token(
+            tag='tables',
+            args=[
+                var(name=const(value='TABLE1'), attr=None, func=None)
+            ]
+        ),
+        condition=None,
+        group=None,
+        having=None
+    ),
+    order=None,
+    limit=None,
+    select=(
+        False,
+        False,
+        var(name=const(value='TABLE1'), attr=const(value='AGE2'), func=None)
+    )
+)
+
+tree=select(
+    from_expr=from_expr(
+        tables=Token(
+            tag='tables',
+            args=[
+                var(name=const(value='TABLE'), attr=None, func=None),
+                Token(tag='inner', args=var(name=const(value='TABLE2'), attr=None, func=None))
+            ]
+        ),
+        condition=Token(
+            tag='func',
+            args=(
+                'and',
+                Token(
+                    tag='func',
+                    args=(
+                        'and',
+                        Token(
+                            tag='func',
+                            args=(
+                                '=',
+                                var(name=const(value='TABLE'), attr=const(value='ID'), func=None),
+                                var(name=const(value='TABLE2'), attr=const(value='TABLE_ID'), func=None)
+                            )
+                        ),
+                        Token(
+                            tag='func',
+                            args=(
+                                '=',
+                                var(name=const(value='TABLE'), attr=const(value='NAME'), func=None),
+                                var(name=const(value='TABLE'), attr=const(value='HELLO'), func=None)
+                            )
+                        )
+                    )
+                ),
+                Token(
+                    tag='func',
+                    args=(
+                        'in',
+                        var(name=const(value='TABLE'), attr=const(value='AGE'), func=None),
+                        Token(tag='link', args=0)
+                    )
+                )
+            )
+        ),
+        group=None,
+        having=None
+    ),
+    order=Token(
+        tag='order',
+        args=(var(name='DATE', attr=None, func=None),),
+        depends=[]
+    ),
+    limit=Token(tag='limit', args=(const(value=0), const(value=10)), depends=[]),
+    select=(
+        False,
+        False,
+        var(name='ID', attr=None, func=None),
+        Token(
+            tag='as',
+            args=(
+                Token(
+                    tag='aggfunc',
+                    args=(
+                        'sum',
+                        var(name='PRICE', attr=None, func=None)
+                    )
+                ),
+                const(value='II')
+            )
+        )
+    )
+)
+
+tree=select(
+    from_expr=from_expr(
+        tables=Token(
+            tag='tables',
+            args=[
+                var(name=const(value='MOBILE'), attr=None, func=None)
+            ]
+        ),
+        condition=Token(
+            tag='func',
+            args=(
+                'or',
+                Token(
+                    tag='func',
+                    args=(
+                        '=',
+                        var(name=const(value='MOBILE'), attr=const(value='COMPANY_ID'), func=None),
+                        const(value=1)
+                    )
+                ),
+                Token(
+                    tag='func',
+                    args=(
+                        '=',
+                        var(name=const(value='MOBILE'), attr=const(value='ID'), func=None),
+                        const(value=1)
+                    )
+                )
+            )
+        ),
+        group=None,
+        having=None
+    ),
+    order=None,
+    limit=None,
+    select=(False, True)
+)
+
+tree=select(
+    from_expr=from_expr(
+        tables=Token(
+            tag='tables',
+            args=[
+                var(name=const(value='MOBILE'), attr=None, func=None)
+            ]
+        ),
+        condition=Token(
+            tag='func',
+            args=(
+                '>',
+                Token(
+                    tag='func',
+                    args=(
+                        '=',
+                        var(name=const(value='MOBILE'), attr=const(value='COMPANY_ID'), func=None),
+                        Token(
+                            tag='func',
+                            args=(
+                                '+',
+                                const(value=1),
+                                var(name=const(value='MOBILE'), attr=const(value='ID'), func=None)
+                            )
+                        )
+                    )
+                ),
+                const(value=5)
+            )
+        ),
+        group=None,
+        having=None
+    ),
+    order=None,
+    limit=None,
+    select=(False, True)
+)
+
+tree=select(
+    from_expr=from_expr(
+        tables=Token(
+            tag='tables',
+            args=[
+                var(name=const(value='MOBILE'), attr=None, func=None)
+            ]
+        ),
+        condition=Token(
+            tag='func',
+            args=(
+                'and',
+                Token(
+                    tag='func',
+                    args=(
+                        '<',
+                        Token(
+                            tag='func',
+                            args=(
+                                '-',
+                                var(name=const(value='MOBILE'), attr=const(value='COMPANY_ID'), func=None),
+                                var(name=const(value='MOBILE'), attr=const(value='ID'), func=None)
+                            )
+                        ),
+                        const(value=3)
+                    )
+                ),
+                Token(
+                    tag='func',
+                    args=(
+                        '>',
+                        Token(
+                            tag='func',
+                            args=(
+                                '-',
+                                var(name=const(value='MOBILE'), attr=const(value='COMPANY_ID'), func=None),
+                                var(name=const(value='MOBILE'), attr=const(value='ID'), func=None)
+                            )
+                        ),
+                        const(value=0)
+                    )
+                )
+            )
+        ),
+        group=None,
+        having=None
+    ),
+    order=None,
+    limit=None,
+    select=(False, True)
+)
+
+tree=select(
+    from_expr=from_expr(
+        tables=Token(
+            tag='tables',
+            args=[
+                var(name=const(value='MOBILE'), attr=None, func=None),
+                var(name=const(value='COMPANY'), attr=None, func=None)
+            ]
+        ),
+        condition=Token(
+            tag='func',
+            args=(
+                'and',
+                Token(
+                    tag='func',
+                    args=(
+                        '=',
+                        var(name=const(value='MOBILE'), attr=const(value='COMPANY_ID'), func=None),
+                        var(name=const(value='COMPANY'), attr=const(value='ID'), func=None)
+                    )
+                ),
+                Token(
+                    tag='func',
+                    args=(
+                        '=',
+                        var(name=const(value='MOBILE'), attr=const(value='NAME'), func=None),
+                        const(value='XIAOMI3')
+                    )
+                )
+            )
+        ),
+        group=None,
+        having=None
+    ),
+    order=None,
+    limit=None,
+    select=(
+        False,
+        False,
+        Token(
+            tag='as',
+            args=(
+                var(name=const(value='COMPANY'), attr=const(value='NAME'), func=None),
+                const(value='COMPANY_NAME')
+            )
+        ),
+        Token(
+            tag='as',
+            args=(
+                var(name=const(value='MOBILE'), attr=const(value='NAME'), func=None),
+                const(value='MOBILE_NAME')
+            )
+        )
+    )
+)
+
+tree=select(
+    from_expr=from_expr(
+        tables=Token(
+            tag='tables',
+            args=[
+                var(name=const(value='MOBILE'), attr=None, func=None),
+                var(name=const(value='COMPANY'), attr=None, func=None),
+                var(name=const(value='CEO'), attr=None, func=None)
+            ]
+        ),
+        condition=Token(
+            tag='func',
+            args=(
+                'and',
+                Token(
+                    tag='func',
+                    args=(
+                        'and',
+                        Token(
+                            tag='func',
+                            args=(
+                                '=',
+                                var(name=const(value='MOBILE'), attr=const(value='COMPANY_ID'), func=None
+                            ),
+                            var(name=const(value='COMPANY'), attr=const(value='ID'), func=None)
+                        )
+                    ),
+                    Token(
+                        tag='func',
+                        args=(
+                            '=',
+                            var(name=const(value='COMPANY'), attr=const(value='ID'), func=None),
+                            var(name=const(value='CEO'), attr=const(value='COMPANY_ID'), func=None)
+                        )
+                    )
+                )
+            ),
+            Token(
+                tag='func',
+                args=(
+                    '=',
+                    var(name=const(value='CEO'), attr=const(value='NAME'), func=None),
+                    const(value='RENZHENGFEI')
+                )
+            )
+        )
+    ),
+    group=None,
+    having=None),
+    order=None,
+    limit=None,
+    select=(
+        False,
+        False,
+        Token(
+            tag='as',
+            args=(
+                var(name=const(value='MOBILE'), attr=const(value='NAME'), func=None),
+                const(value='MOBILE_NAME')
+            )
+        ),
+        Token(
+            tag='as',
+            args=(
+                var(name=const(value='COMPANY'), attr=const(value='NAME'), func=None),
+                const(value='COMPANY_NAME')
+            )
+        ),
+        Token(
+            tag='as',
+            args=(
+                var(name=const(value='CEO'), attr=const(value='NAME'), func=None),
+                const(value='CEO_NAME')
+            )
+        )
+    )
+)
+
+tree=select(
+    from_expr=from_expr(
+        tables=Token(
+            tag='tables',
+            args=[
+                var(name=const(value='MOBILE'), attr=None, func=None)
+            ]
+        ),
+        condition=None,
+        group=None,
+        having=None
+    ),
+    order=None,
+    limit=None,
+    select=(
+        False,
+        False,
+        Token(
+            tag='as',
+            args=(
+                Token(
+                    tag='aggfunc',
+                    args=(
+                        'sum',
+                        var(name=const(value='MOBILE'), attr=const(value='ID'), func=None)
+                    )
+                ),
+                const(value='SUM_MOBILE_ID')
+            )
+        ),
+        Token(
+            tag='as',
+            args=(
+                Token(
+                    tag='aggfunc',
+                    args=(
+                        'sum',
+                        var(name=const(value='MOBILE'), attr=const(value='COMPANY_ID'), func=None)
+                    )
+                ),
+                const(value='SUM_COMPANY_ID')
+            )
+        )
+    )
+)
+
+tree=select(
+    from_expr=from_expr(
+        tables=Token(
+            tag='tables',
+            args=[
+                var(name=const(value='MOBILE'), attr=None, func=None)
+            ]
+        ),
+        condition=None,
+        group=None,
+        having=None
+    ),
+    order=None,
+    limit=None,
+    select=(
+        False,
+        False,
+        Token(
+            tag='as',
+            args=(
+                Token(
+                    tag='aggfunc',
+                    args=('count', True)
+                ),
+                const(value='COUNT1')
+            )
+        )
+    )
+)
+
+tree=select(
+    from_expr=from_expr(
+        tables=Token(
+            tag='tables',
+            args=[
+                var(name=const(value='MOBILE'), attr=None, func=None)
+            ]
+        ),
+        condition=None,
+        group=(
+            var(name=const(value='MOBILE'), attr=const(value='COMPANY_ID'), func=None),
+        ),
+        having=None
+    ),
+    order=None,
+    limit=None,
+    select=(
+        False,
+        False,
+        var(name=const(value='MOBILE'), attr=const(value='COMPANY_ID'), func=None),
+        Token(
+            tag='as',
+            args=(
+                Token(
+                    tag='aggfunc',
+                    args=('count', True)
+                ),
+                const(value='COUNT1')
+            )
+        )
+    )
+)
+
+tree=select(
+    from_expr=from_expr(
+        tables=Token(
+            tag='tables',
+            args=[
+                var(name=const(value='MOBILE'), attr=None, func=None)
+            ]
+        ),
+        condition=None,
+        group=(
+            var(name=const(value='MOBILE'), attr=const(value='COMPANY_ID'), func=None),
+        ),
+        having=Token(
+            tag='func',
+            args=(
+                'and',
+                Token(
+                    tag='func',
+                    args=(
+                        '>=',
+                        Token(
+                            tag='aggfunc',
+                            args=('count', True)
+                        ),
+                        const(value=2)
+                    )
+                ),
+                Token(
+                    tag='func',
+                    args=(
+                        '!=',
+                        var(name=const(value='MOBILE'), attr=const(value='COMPANY_ID'), func=None),
+                        const(value=4)
+                    )
+                )
+            )
+        )
+    ),
+    order=None,
+    limit=None,
+    select=(
+        False,
+        False,
+        var(name=const(value='MOBILE'), attr=const(value='COMPANY_ID'), func=None),
+        Token(
+            tag='as',
+            args=(
+                Token(
+                    tag='aggfunc',
+                    args=('count', True)
+                ),
+                const(value='COUNT1')
+            )
+        )
+    )
+)
+
+tree=select(
+    from_expr=from_expr(
+        tables=Token(
+            tag='tables',
+            args=[
+                var(name=const(value='MOBILE'), attr=None, func=None),
+                var(name=const(value='COMPANY'), attr=None, func=None),
+                var(name=const(value='CEO'), attr=None, func=None)
+            ]
+        ),
+        condition=Token(
+            tag='func',
+            args=(
+                'and',
+                Token(
+                    tag='func',
+                    args=(
+                        'and',
+                        Token(
+                            tag='func',
+                            args=(
+                                '=',
+                                var(name=const(value='MOBILE'), attr=const(value='COMPANY_ID'), func=None),
+                                var(name=const(value='COMPANY'), attr=const(value='ID'), func=None)
+                            )
+                        ),
+                        Token(
+                            tag='func',
+                            args=(
+                                '=',
+                                var(name=const(value='COMPANY'), attr=const(value='ID'), func=None),
+                                var(name=const(value='CEO'), attr=const(value='COMPANY_ID'), func=None)
+                            )
+                        )
+                    )
+                ),
+                Token(
+                    tag='func',
+                    args=(
+                        '=',
+                        var(name=const(value='MOBILE'), attr=const(value='NAME'), func=None),
+                        const(value='MATE20')
+                    )
+                )
+            )
+        ),
+        group=None,
+        having=None
+    ),
+    order=None,
+    limit=None,
+    select=(
+        False,
+        False,
+        Token(
+            tag='as',
+            args=(
+                var(name=const(value='MOBILE'), attr=const(value='NAME'), func=None),
+                const(value='MOBILE_NAME')
+            )
+        ),
+        Token(
+            tag='as',
+            args=(
+                var(name=const(value='COMPANY'), attr=const(value='NAME'), func=None),
+                const(value='COMPANY_NAME')
+            )
+        ),
+        Token(
+            tag='as',
+            args=(
+                var(name=const(value='CEO'), attr=const(value='NAME'), func=None),
+                const(value='CEO_NAME')
+            )
+        )
+    )
+)
+
+tree=select(
+    from_expr=from_expr(
+        tables=Token(
+            tag='tables',
+            args=[
+                var(name=const(value='MOBILE'), attr=None, func=None),
+                var(name=const(value='COMPANY'), attr=None, func=None),
+                var(name=const(value='CEO'), attr=None, func=None)
+            ]
+        ),
+        condition=Token(
+            tag='func',
+            args=(
+                'and',
+                Token(
+                    tag='func',
+                    args=(
+                        'and',
+                        Token(
+                            tag='func',
+                            args=(
+                                '=',
+                                var(name=const(value='MOBILE'), attr=const(value='COMPANY_ID'), func=None),
+                                var(name=const(value='COMPANY'), attr=const(value='ID'), func=None)
+                            )
+                        ),
+                        Token(
+                            tag='func',
+                            args=(
+                                '=',
+                                var(name=const(value='COMPANY'), attr=const(value='ID'), func=None),
+                                var(name=const(value='CEO'), attr=const(value='COMPANY_ID'), func=None)
+                            )
+                        )
+                    )
+                ),
+                Token(
+                    tag='func',
+                    args=(
+                        '=',
+                        var(name=const(value='MOBILE'), attr=const(value='NAME'), func=None),
+                        const(value='MATE20')
+                    )
+                )
+            )
+        ),
+        group=None,
+        having=None
+    ),
+    order=None,
+    limit=None,
+    select=(
+        False,
+        False,
+        Token(
+            tag='as',
+            args=(
+                var(name=const(value='MOBILE'), attr=const(value='NAME'), func=None),
+                const(value='MOBILE_NAME')
+            )
+        ),
+        Token(
+            tag='as',
+            args=(
+                var(name=const(value='COMPANY'), attr=const(value='NAME'), func=None),
+                const(value='COMPANY_NAME')
+            )
+        ),
+        Token(
+            tag='as',
+            args=(
+                var(name=const(value='CEO'), attr=const(value='NAME'), func=None),
+                const(value='CEO_NAME')
+            )
+        )
+    )
+)
+
+tree=select(
+    from_expr=from_expr(
+        tables=Token(
+            tag='tables',
+            args=[
+                var(name=const(value='MOBILE'), attr=None, func=None),
+                var(name=const(value='COMPANY'), attr=None, func=None),
+                var(name=const(value='CEO'), attr=None, func=None)
+            ]
+        ),
+        condition=Token(
+            tag='func',
+            args=(
+                'and',
+                Token(
+                    tag='func',
+                    args=(
+                        'and',
+                        Token(
+                            tag='func',
+                            args=(
+                                '=',
+                                var(name=const(value='MOBILE'), attr=const(value='COMPANY_ID'), func=None),
+                                var(name=const(value='COMPANY'), attr=const(value='ID'), func=None)
+                            )
+                        ),
+                        Token(
+                            tag='func',
+                            args=(
+                                '=',
+                                var(name=const(value='COMPANY'), attr=const(value='ID'), func=None),
+                                var(name=const(value='CEO'), attr=const(value='COMPANY_ID'), func=None)
+                            )
+                        )
+                    )
+                ),
+                Token(
+                    tag='func',
+                    args=(
+                        '=',
+                        const(value='1'),
+                        const(value='MATE20')
+                    )
+                )
+            )
+        ),
+        group=None,
+        having=None
+    ),
+    order=None,
+    limit=None,
+    select=(
+        False,
+        False,
+        Token(
+            tag='as',
+            args=(
+                var(name=const(value='MOBILE'), attr=const(value='NAME'), func=None),
+                const(value='MOBILE_NAME')
+            )
+        ),
+        Token(
+            tag='as',
+            args=(
+                var(name=const(value='COMPANY'), attr=const(value='NAME'), func=None),
+                const(value='COMPANY_NAME')
+            )
+        ),
+        Token(
+            tag='as',
+            args=(
+                var(name=const(value='CEO'), attr=const(value='NAME'), func=None),
+                const(value='CEO_NAME')
+            )
+        )
+    )
+)
+
+tree=select(
+    from_expr=from_expr(
+        tables=Token(
+            tag='tables',
+            args=[
+                var(name=const(value='MOBILE'), attr=None, func=None)
+            ]
+        ),
+        condition=None,
+        group=None,
+        having=None
+    ),
+    order=None,
+    limit=None,
+    select=(
+        False,
+        False,
+        Token(
+            tag='as',
+            args=(
+                Token(
+                    tag='aggfunc',
+                    args=(
+                        'sum',
+                        var(name=const(value='MOBILE'), attr=const(value='ID'), func=None)
+                    )
+                ),
+                const(value='SUM1')
+            )
+        )
+    )
+)
+
+tree=select(
+    from_expr=from_expr(
+        tables=Token(
+            tag='tables',
+            args=[
+                var(name=const(value='MOBILE'), attr=None, func=None)
+            ]
+        ),
+        condition=None,
+        group=None,
+        having=None
+    ),
+    order=Token(
+        tag='order',
+        args=(
+            var(name=const(value='MOBILE'), attr=const(value='COMPANY_ID'), func=None),
+        ),
+        depends=[]
+    ),
+    limit=None,
+    select=(
+        False,
+        False,
+        var(name=const(value='MOBILE'), attr=const(value='COMPANY_ID'), func=None)
+    )
+)
+
+tree=select(
+    from_expr=from_expr(
+        tables=Token(
+            tag='tables',
+            args=[
+                var(name=const(value='MOBILE'), attr=None, func=None)
+            ]
+        ),
+        condition=None,
+        group=None,
+        having=None
+    ),
+    order=Token(
+        tag='order',
+        args=(
+            Token(
+                tag='desc',
+                args=var(name=const(value='MOBILE'), attr=const(value='COMPANY_ID'), func=None)
+            ),
+        ),
+        depends=[]
+    ),
+    limit=None,
+    select=(
+        False,
+        False,
+        var(name=const(value='MOBILE'), attr=const(value='COMPANY_ID'), func=None)
+    )
+)
+
+tree=select(
+    from_expr=from_expr(
+        tables=Token(
+            tag='tables',
+            args=[
+                var(name=const(value='MOBILE'), attr=None, func=None)
+            ]
+        ),
+        condition=None,
+        group=(
+            var(name=const(value='MOBILE'), attr=const(value='COMPANY_ID'), func=None),
+        ),
+        having=None
+    ),
+    order=Token(
+        tag='order',
+        args=(
+            var(name=const(value='MOBILE'), attr=const(value='COMPANY_ID'), func=None),
+        ),
+        depends=[]
+    ),
+    limit=None,
+    select=(
+        False,
+        False,
+        var(name=const(value='MOBILE'), attr=const(value='COMPANY_ID'), func=None)
+    )
+)
+
+tree=select(
+    from_expr=from_expr(
+        tables=Token(
+            tag='tables',
+            args=[
+                var(name=const(value='MOBILE'), attr=None, func=None)
+            ]
+        ),
+        condition=Token(
+            tag='func',
+            args=(
+                'in',
+                var(
+                    name=const(value='MOBILE'),
+                    attr=const(value='NAME'),
+                    func=None
+                ),
+                (
+                    const(value='XIAOMI2'),
+                    const(value='XIAOMI3'),
+                    const(value='MATE20')
+                )
+            )
+        ),
+        group=None,
+        having=None
+    ),
+    order=None,
+    limit=None,
+    select=(
+        False,
+        False,
+        var(name=const(value='MOBILE'), attr=const(value='COMPANY_ID'), func=None),
+        var(name=const(value='MOBILE'), attr=const(value='NAME'), func=None)
+    )
+)
+
+tree=select(
+    from_expr=from_expr(
+        tables=Token(
+            tag='tables',
+            args=[
+                var(name=const(value='MOBILE'), attr=None, func=None)
+            ]
+        ),
+        condition=Token(
+            tag='func',
+            args=(
+                'not_in',
+                var(name=const(value='MOBILE'), attr=const(value='NAME'), func=None),
+                (
+                    const(value='XIAOMI2'),
+                    const(value='XIAOMI3'),
+                    const(value='MATE20')
+                )
+            )
+        ),
+        group=None,
+        having=None
+    ),
+    order=None,
+    limit=None,
+    select=(
+        False,
+        False,
+        var(name=const(value='MOBILE'), attr=const(value='COMPANY_ID'), func=None),
+        var(name=const(value='MOBILE'), attr=const(value='NAME'), func=None)
+    )
+)
+
+tree=select(
+    from_expr=from_expr(
+        tables=Token(
+            tag='tables',
+            args=[
+                var(name=const(value='COMPANY'), attr=None, func=None)
+            ]
+        ),
+        condition=None,
+        group=None,
+        having=None
+    ),
+    order=None,
+    limit=None,
+    select=(
+        False,
+        False,
+        var(name=const(value='COMPANY'), attr=const(value='ID'), func=None)
+    )
+)
+
+tree=select(
+    from_expr=from_expr(
+        tables=Token(
+            tag='tables',
+            args=[
+                var(name=const(value='MOBILE'), attr=None, func=None)
+            ]
+        ),
+        condition=Token(
+            tag='func',
+            args=(
+                'in',
+                var(name=const(value='MOBILE'), attr=const(value='COMPANY_ID'), func=None),
+                Token(tag='link', args=20)
+            )
+        ),
+        group=None,
+        having=None
+    ),
+    order=None,
+    limit=None,
+    select=(
+        False,
+        False,
+        var(name=const(value='MOBILE'), attr=const(value='COMPANY_ID'), func=None),
+        var(name=const(value='MOBILE'), attr=const(value='NAME'), func=None)
+    )
+)
+
+tree=select(
+    from_expr=from_expr(
+        tables=Token(
+            tag='tables',
+            args=[
+                var(name=const(value='COMPANY'), attr=None, func=None)
+            ]
+        ),
+        condition=None,
+        group=None,
+        having=None
+    ),
+    order=None,
+    limit=None,
+    select=(
+        False,
+        False,
+        Token(
+            tag='as',
+            args=(
+                Token(
+                    tag='case',
+                    args=[
+                        (
+                            Token(
+                                tag='func',
+                                args=(
+                                    '=',
+                                    var(name=const(value='COMPANY'), attr=const(value='NAME'), func=None),
+                                    const(value='XIAOMI')
+                                )
+                            ),
+                            const(value='小米')
+                        ),
+                        (
+                            Token(
+                                tag='func',
+                                args=(
+                                    '=',
+                                    var(name=const(value='COMPANY'), attr=const(value='NAME'), func=None),
+                                    const(value='HUAWEI')
+                                )
+                            ),
+                            const(value='华为')
+                        ),
+                        (
+                            Token(
+                                tag='func',
+                                args=(
+                                    '=',
+                                    var(name=const(value='COMPANY'), attr=const(value='NAME'), func=None),
+                                    const(value='APPLE')
+                                )
+                            ),
+                            const(value='苹果')
+                        ),
+                        (
+                            None,
+                            const(value='')
+                        )
+                    ]
+                ),
+                const(value='COMPANY_NAME')
+            )
+        )
+    )
+)
+
+tree=select(
+    from_expr=from_expr(
+        tables=Token(
+            tag='tables',
+            args=[
+                var(name=const(value='COMPANY'), attr=None, func=None)
+            ]
+        ),
+        condition=None,
+        group=None,
+        having=None
+    ),
+    order=None,
+    limit=None,
+    select=(
+        False,
+        False,
+        Token(
+            tag='func',
+            args=(
+                'RENAME',
+                (
+                    const(value='*'),
+                    None,
+                    const(value='NAME:公司,ID:ID')
+                )
+            )
+        )
+    )
+)
+
+tree=select(
+    from_expr=from_expr(
+        tables=Token(
+            tag='tables',
+            args=[
+                var(name=const(value='COMPANY'), attr=None, func=None)
+            ]
+        ),
+        condition=None,
+        group=None,
+        having=None
+    ),
+    order=None,
+    limit=None,
+    select=(
+        False,
+        False,
+        Token(
+            tag='func',
+            args=(
+                'RENAME',
+                (
+                    const(value='*'),
+                    None,
+                    const(value='NAME:公司,ID:ID')
+                )
+            )
+        )
+    )
+)
+
+tree=select(
+    from_expr=from_expr(
+        tables=Token(
+            tag='tables',
+            args=[
+                var(name=const(value='MOBILE'), attr=None, func=None)
+            ]
+        ),
+        condition=None,
+        group=(
+            var(name=const(value='MOBILE'), attr=const(value='COMPANY_ID'), func=None),
+        ),
+        having=None
+    ),
+    order=None,
+    limit=None,
+    select=(
+        False,
+        False,
+        Token(
+            tag='as',
+            args=(
+                Token(
+                    tag='aggfunc',
+                    args=(
+                        'sum',
+                        Token(
+                            tag='func',
+                            args=(
+                                'INT',
+                                (
+                                    var(name=const(value='MOBILE'), attr=const(value='ID'), func=None),
+                                )
+                            )
+                        )
+                    )
+                ),
+                const(value='SUM1')
+            )
+        ),
+        var(name=const(value='MOBILE'), attr=const(value='COMPANY_ID'), func=None)
+    )
+)
+
+tree=select(
+    from_expr=from_expr(
+        tables=Token(
+            tag='tables',
+            args=[
+                var(name=const(value='MOBILE'), attr=None, func=None),
+                var(name=const(value='COMPANY'), attr=None, func=None),
+                var(name=const(value='CEO'), attr=None, func=None),
+                var(name=const(value='MOBILE_PRICE'), attr=None, func=None)
+            ]
+        ),
+        condition=Token(
+            tag='func',
+            args=(
+                'and',
+                Token(
+                    tag='func',
+                    args=(
+                        'and',
+                        Token(
+                            tag='func',
+                            args=(
+                                '=',
+                                var(name=const(value='MOBILE'), attr=const(value='ID'), func=None),
+                                var(name=const(value='MOBILE_PRICE'), attr=const(value='MOBILE_ID'), func=None)
+                            )
+                        ),
+                        Token(
+                            tag='func',
+                            args=(
+                                '=',
+                                var(name=const(value='MOBILE'), attr=const(value='COMPANY_ID'), func=None),
+                                var(name=const(value='COMPANY'), attr=const(value='ID'), func=None)
+                            )
+                        )
+                    )
+                ),
+                Token(
+                    tag='func',
+                    args=(
+                        '=',
+                        var(name=const(value='COMPANY'), attr=const(value='ID'), func=None),
+                        var(name=const(value='CEO'), attr=const(value='COMPANY_ID'), func=None)
+                    )
+                )
+            )
+        ),
+        group=(
+            var(name=const(value='CEO'), attr=const(value='NAME'), func=None),
+            var(name=const(value='MOBILE_PRICE'), attr=const(value='TYPE'), func=None)
+        ),
+        having=None
+    ),
+    order=None,
+    limit=None,
+    select=(
+        False,
+        False,
+        Token(
+            tag='func',
+            args=(
+                'DEFLATE',
+                (
+                    var(name=const(value='CEO'), attr=const(value='NAME'), func=None),
+                    None,
+                    const(value='CEO_NAME'),
+                    None,
+                    var(name=const(value='MOBILE_PRICE'), attr=const(value='TYPE'),
+                    func=None
+                ),
+                None,
+                Token(
+                    tag='aggfunc',
+                    args=(
+                        'sum',
+                        var(name=const(value='MOBILE_PRICE'), attr=const(value='PRICE'), func=None))
+                    ),
+                    None,
+                    const(value='0:普通,1:旗舰'),
+                    None,
+                    const(value=0)
+                )
+            )
+        )
+    )
+)
+"""
