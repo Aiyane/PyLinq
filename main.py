@@ -1,21 +1,8 @@
-from antlr4 import *
-from gen.MySqlLexer import MySqlLexer
-from gen.MySqlParser import MySqlParser
-from visitor import MySqlVisitor
+from interpreter import run
 
 
-def main(input_stream):
-    lexer = MySqlLexer(input_stream)
-    stream = CommonTokenStream(lexer)
-    parser = MySqlParser(stream)
-
-    tree = parser.selectRootStatament()
-    visitor = MySqlVisitor()
-    visitor.visit(tree)
-    queue = visitor.select_statements_queue
-    while not queue.empty():
-        res = queue.get()
-        print(res)
+def main(sql_expr: str, data_sources: dict):
+    print(run(sql_expr, data_sources))
 
 
 if __name__ == '__main__':
@@ -83,8 +70,18 @@ WHEN COMPANY.NAME ='APPLE' THEN '苹果' ELSE '' END AS COMPANY_NAME FROM COMPAN
 FROM MOBILE, COMPANY, CEO, MOBILE_PRICE WHERE MOBILE.ID = MOBILE_PRICE.MOBILE_ID
 AND MOBILE.COMPANY_ID = COMPANY.ID AND COMPANY.ID = CEO.COMPANY_ID GROUP BY CEO.NAME, MOBILE_PRICE.TYPE)
 """
-    input_stream = InputStream(s)
+    test_sql_expr = "(SELECT Teacher.name FROM Teacher WHERE Teacher.year = 5)"
+    test_data = {
+        'Teacher': [
+            {'name': 'zhang', 'year': 5},
+            {'name': 'li', 'year': 3}
+        ],
+        'Student': [
+            {'number': 10, 'age': 18},
+            {'number': 20, 'age': 17}
+        ]
+    }
     import time
     now = time.time()
-    main(input_stream)
+    main(test_sql_expr, test_data)
     print(time.time() - now)

@@ -11,10 +11,6 @@ selectRootStatament:
 selectStatement
     : querySpecification                                            #simpleSelect
     | queryExpression                                               #parenthesisSelect
-//    | querySpecification unionStatement+
-//        orderByClause? limitClause?                                 #unionSelect
-//    | queryExpression unionParenthesis+
-//        orderByClause? limitClause?                                 #unionParenthesisSelect
     ;
 
 // 2

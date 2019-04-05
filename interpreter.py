@@ -1,6 +1,11 @@
-from nodes import *
-from proxy import FuncProxy
+from antlr4 import CommonTokenStream, InputStream
 
+from gen.MySqlLexer import MySqlLexer
+from gen.MySqlParser import MySqlParser
+
+from visitor import MySqlVisitor
+from proxy import FuncProxy
+from nodes import *
 
 agg_funcs = dict()
 
@@ -46,8 +51,8 @@ class QuerySet:
         self.res = []
         self.ids = set()
         self.length = 0
-        self.group = [get_expr(sub_group) for sub_group in group_expr]
-        self.order = [get_expr(sub_order) for sub_order in order_expr]
+        self.group = [get_expr(sub_group) for sub_group in group_expr] if group_expr else []
+        self.order = [get_expr(sub_order) for sub_order in order_expr] if order_expr else []
         self.select = select_expr
         for expr in select_expr[2:]:
             if isinstance(expr, SQLToken) and expr.tag == AGGFUNC:
@@ -87,14 +92,14 @@ class QuerySet:
         if start == end:
             if self._lte(self.res[start], item):
                 if start == self.length:
-                    self.res.append(visit(self.select, item))
+                    self.res.append(visit_select(self.select, item))
                 else:
-                    self.res.insert(start+1, visit(self.select, item))
+                    self.res.insert(start+1, visit_select(self.select, item))
             else:
-                self.res.insert(start-1, visit(self.select, item))
+                self.res.insert(start-1, visit_select(self.select, item))
         mid = (start + end) // 2
         if self._gt(self.res[mid], item) and self._lte(self.res[mid-1], item):
-            self.res.append(visit(self.select, item))
+            self.res.append(visit_select(self.select, item))
         elif self._gt(self.res[mid-1], item):
             self._append(item, start, mid - 1)
         elif self._lte(self.res[mid], item):
@@ -111,7 +116,7 @@ class QuerySet:
             if self.order:
                 self._append(item, 0, self.length)
             else:
-                self.res.append(item)
+                self.res.append(visit_select(self.select, item))
             self.length += 1
         else:
             pk = tuple(item[table_name][attr] for order, table_name, attr in self.group)
@@ -211,7 +216,7 @@ def visit_var(var_expr: VAR, data_sources: dict) -> tuple:
     attr, func = visit(var_expr.attr, data_sources), visit(var_expr.func, data_sources)
     if attr:
         value = table[attr]
-        return attr, FuncProxy.get(func)(value) if func else attr, value
+        return attr, FuncProxy.get(func)(value) if func else value
     return name, table
 
 
@@ -269,7 +274,11 @@ def visit_as(as_expr: SQLToken, data_sources) -> tuple:
 
 def visit_func(func_expr: SQLToken, data_sources):
     func = FuncProxy.get(func_expr.args[0])
-    return func(*[visit(arg, data_sources) for arg in func_expr.args[1:]])
+    args = []
+    for arg in func_expr.args[1:]:
+        _arg = visit(arg, data_sources)
+        args.append(_arg[1] if isinstance(arg, VAR) else _arg)
+    return func(*args)
 
 
 def visit_aggfunc(aggfunc_expr: SQLToken, data_sources):
@@ -282,11 +291,22 @@ def visit_limit(limit_expr: SQLToken, res: list) -> list:
     return res[offset:offset+limit]
 
 
+def visit_link(link_expr: SQLToken, data_sources) -> list:
+    res = []
+    for instance in __SQL_RESULT__[link_expr.args]:
+        line = tuple(v for k, v in instance.items())
+        if len(line) == 1:
+            res.append(line[0])
+        else:
+            res.append(line)
+    return res
+
+
 def visit(sql_expr, data_sources):
     if sql_expr is None:
         return None
     if isinstance(sql_expr, STATES):
-        tag_visit_dict[sql_expr.__dict__.__name__.lower()](sql_expr, data_sources)
+        return tag_visit_dict[sql_expr.__class__](sql_expr, data_sources)
     if isinstance(sql_expr, SQLToken):
         return tag_visit_dict[sql_expr.tag](sql_expr, data_sources)
     if isinstance(sql_expr, (list, tuple, set)):
@@ -298,10 +318,10 @@ tag_visit_dict = {
     VAR: visit_var,
     INNER: visit_inner,
     CONST: visit_const,
-    SELECT: visit_select,
     AS: visit_as,
     FUNC: visit_func,
     LIMIT: visit_limit,
+    LINK: visit_link,
 }
 
 get_expr_dict = {
@@ -369,7 +389,6 @@ def condition_filter(res_list: ResList, instance_dict, res: QuerySet) -> QuerySe
 
 def sql_interpreter(sql_expr: SELECT, data_sources: dict) -> list:
     """
-    入口
     :param sql_expr:
     :param data_sources:
     :return:
@@ -379,9 +398,33 @@ def sql_interpreter(sql_expr: SELECT, data_sources: dict) -> list:
     res_list = ResList([], from_expr.condition, from_expr.having)
     limit = sql_expr.limit
 
-    res = main_loop(res_list, data_sources, {}, QuerySet(res_list.group_expr, res_list.order_expr, sql_expr.select)).res
+    res = main_loop(res_list, data_sources, {}, QuerySet(from_expr.group,
+                                                         sql_expr.order,
+                                                         sql_expr.select)).res
     # 如果有聚合函数
     if agg_funcs:
         agg_funcs.clear()
         return [res[-1]]
     return visit(limit, res) if limit else res
+
+
+__SQL_RESULT__ = dict()
+
+
+def run(sql_expr: str, data_sources: dict):
+    """接口"""
+    input_stream = InputStream(sql_expr)
+    lexer = MySqlLexer(input_stream)
+    stream = CommonTokenStream(lexer)
+    parser = MySqlParser(stream)
+    visitor = MySqlVisitor()
+    # tree = parser.selectRootStatament()
+    tree = parser.queryExpression()
+    visitor.visit(tree)
+    queue = visitor.select_statements_queue
+    result = []
+    while not queue.empty():
+        sql_expr: SelectStatement = queue.get()
+        result = sql_interpreter(sql_expr.tree, data_sources)
+        __SQL_RESULT__[sql_expr.id] = result
+    return result

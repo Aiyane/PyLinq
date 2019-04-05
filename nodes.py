@@ -1,6 +1,10 @@
 from collections import namedtuple
 from typing import NewType
 
+__all__ = ['SelectStatement', 'SQLToken', 'FROM', 'SELECT', 'HAVING', 'GROUP', 'VAR', 'CONST', 'UNKNOWN', 'STATES',
+           'DISTINCT', 'TABLES', 'AS', 'FUNC', 'CASE', 'INNER', 'OUTER', 'ORDER', 'DESC', 'LIMIT', 'LINK',
+           'AGGFUNC', 'ResList']
+
 # select 语句
 SelectStatement = namedtuple('Root', ('id', 'tree'))
 # 通用语句
