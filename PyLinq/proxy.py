@@ -61,6 +61,7 @@ class FuncProxy:
         'SOME<>': lambda: lambda x, y: any((x != v for v in y)),
         'SOME!=': lambda: lambda x, y: any((x != v for v in y)),
         'SOME<=>': lambda: lambda x, y: any((x != v for v in y)),
+        'int': lambda: lambda x: int(x),
         'not_between': lambda: lambda x, s, e: x < s or x > e,
         'between': lambda: lambda x, s, e: s <= x <= e,
         'not_regexp': lambda: lambda x, y: re.match(y, x) is None,

@@ -189,23 +189,23 @@ class SQLRuleTest(unittest.TestCase):
         data_source = run(sql, self.data_sources)
         self.assertListEqual(data_source, [{'count1': 7}])
 
-    # def test_group_sql4(self):
-    #     sql = ("(SELECT mobile.company_id, COUNT(*) AS count1 "
-    #            "FROM mobile "
-    #            "GROUP BY mobile.company_id)")
-    #     data_source = run(sql, self.data_sources)
-    #     self.is_same_val('company_id', data_source, [{'company_id': 3, 'count1': 2},
-    #                                                  {'company_id': 4, 'count1': 2},
-    #                                                  {'company_id': 1, 'count1': 2},
-    #                                                  {'company_id': 2, 'count1': 1}])
-    #
-    # def test_having_sql1(self):
-    #     sql = ("(select mobile.company_id, count(*) as count "
-    #            "from mobile group by mobile.company_id "
-    #            "having count(*) >= 2 and mobile.company_id != 4)")
-    #     data_source = run(sql, self.data_sources)
-    #     self.is_same_val('company_id', data_source, [{'count': 2, 'company_id': 3},
-    #                                                  {'count': 2, 'company_id': 1}])
+    def test_group_sql4(self):
+        sql = ("(SELECT mobile.company_id, COUNT(*) AS count1 "
+               "FROM mobile "
+               "GROUP BY mobile.company_id)")
+        data_source = run(sql, self.data_sources)
+        self.is_same_val('company_id', data_source, [{'company_id': 3, 'count1': 2},
+                                                     {'company_id': 4, 'count1': 2},
+                                                     {'company_id': 1, 'count1': 2},
+                                                     {'company_id': 2, 'count1': 1}])
+
+    def test_having_sql1(self):
+        sql = ("(SELECT mobile.company_id, COUNT(*) AS count1 "
+               "FROM mobile GROUP BY mobile.company_id "
+               "HAVING COUNT(*) >= 2 AND mobile.company_id != 4)")
+        data_source = run(sql, self.data_sources)
+        self.is_same_val('company_id', data_source, [{'count1': 2, 'company_id': 3},
+                                                     {'count1': 2, 'company_id': 1}])
 
     def test_select_sql2(self):
         sql = ("(SELECT mobile.name AS mobile_name, company.name AS company_name, ceo.name AS ceo_name "
@@ -241,42 +241,42 @@ class SQLRuleTest(unittest.TestCase):
         data_source = run(sql, self.data_sources)
         self.assertListEqual(data_source, [{'sum1': 24}])
 
-    # def test_asc_order(self):
-    #     sql = ("(SELECT mobile.company_id "
-    #            "FROM mobile "
-    #            "ORDER BY mobile.company_id ASC)")
-    #     data_source = run(sql, self.data_sources)
-    #     self.assertListEqual(data_source, [{'company_id': 1},
-    #                                        {'company_id': 1},
-    #                                        {'company_id': 2},
-    #                                        {'company_id': 3},
-    #                                        {'company_id': 3},
-    #                                        {'company_id': 4},
-    #                                        {'company_id': 4}])
+    def test_asc_order(self):
+        sql = ("(SELECT mobile.company_id "
+               "FROM mobile "
+               "ORDER BY mobile.company_id ASC)")
+        data_source = run(sql, self.data_sources)
+        self.assertListEqual(data_source, [{'company_id': 1},
+                                           {'company_id': 1},
+                                           {'company_id': 2},
+                                           {'company_id': 3},
+                                           {'company_id': 3},
+                                           {'company_id': 4},
+                                           {'company_id': 4}])
 
-    # def test_desc_order(self):
-    #     sql = ("(SELECT mobile.company_id "
-    #            "FROM mobile "
-    #            "ORDER BY mobile.company_id DESC)")
-    #     data_source = run(sql, self.data_sources)
-    #     self.assertListEqual(data_source, [{'company_id': 4},
-    #                                        {'company_id': 4},
-    #                                        {'company_id': 3},
-    #                                        {'company_id': 3},
-    #                                        {'company_id': 2},
-    #                                        {'company_id': 1},
-    #                                        {'company_id': 1}])
+    def test_desc_order(self):
+        sql = ("(SELECT mobile.company_id "
+               "FROM mobile "
+               "ORDER BY mobile.company_id DESC)")
+        data_source = run(sql, self.data_sources)
+        self.assertListEqual(data_source, [{'company_id': 4},
+                                           {'company_id': 4},
+                                           {'company_id': 3},
+                                           {'company_id': 3},
+                                           {'company_id': 2},
+                                           {'company_id': 1},
+                                           {'company_id': 1}])
 
-    # def test_group_order(self):
-    #     sql = ("(SELECT mobile.company_id "
-    #            "FROM mobile "
-    #            "GROUP BY mobile.company_id "
-    #            "ORDER BY mobile.company_id)")
-    #     data_source = run(sql, self.data_sources)
-    #     self.assertListEqual(data_source, [{'company_id': 1},
-    #                                        {'company_id': 2},
-    #                                        {'company_id': 3},
-    #                                        {'company_id': 4}])
+    def test_group_order(self):
+        sql = ("(SELECT mobile.company_id "
+               "FROM mobile "
+               "GROUP BY mobile.company_id "
+               "ORDER BY mobile.company_id)")
+        data_source = run(sql, self.data_sources)
+        self.assertListEqual(data_source, [{'company_id': 1},
+                                           {'company_id': 2},
+                                           {'company_id': 3},
+                                           {'company_id': 4}])
 
     def test_in_order(self):
         sql = ("(SELECT mobile.company_id, mobile.name "
@@ -311,36 +311,36 @@ class SQLRuleTest(unittest.TestCase):
                                            {'name': 'iphone5', 'company_id': 1},
                                            {'name': 'Mate20', 'company_id': 2}])
 
-    # def test_when_case_order(self):
-    #     sql = ("(SELECT "
-    #            "CASE WHEN company.name = 'xiaomi' THEN '小米' "
-    #            "WHEN company.name ='huawei' THEN '华为' "
-    #            "WHEN company.name ='apple' THEN '苹果' "
-    #            "ELSE '' end AS company_name "
-    #            "FROM company)")
-    #     data_source = run(sql, self.data_sources)
-    #     self.assertListEqual(data_source, [{'company_name': '苹果'},
-    #                                        {'company_name': '华为'},
-    #                                        {'company_name': '小米'},
-    #                                        {'company_name': '小米'}])
+    def test_when_case_order(self):
+        sql = ("(SELECT "
+               "CASE WHEN company.name = 'xiaomi' THEN '小米' "
+               "WHEN company.name ='huawei' THEN '华为' "
+               "WHEN company.name ='apple' THEN '苹果' "
+               "ELSE '' END AS company_name "
+               "FROM company)")
+        data_source = run(sql, self.data_sources)
+        self.assertListEqual(data_source, [{'company_name': '苹果'},
+                                           {'company_name': '华为'},
+                                           {'company_name': '小米'},
+                                           {'company_name': '小米'}])
 
-    # def test_rename_funcs(self):
-    #     sql = "(SELECT rename(*, 'name:公司,id:ID') FROM company)"
-    #     data_source = run(sql, self.data_sources)
-    #     self.assertListEqual(data_source, [{'公司': 'apple', 'ID': 1},
-    #                                        {'公司': 'huawei', 'ID': 2},
-    #                                        {'公司': 'xiaomi', 'ID': 3},
-    #                                        {'公司': 'xiaomi', 'ID': 4}])
+    def test_rename_funcs(self):
+        sql = "(SELECT rename('*', 'name:公司,id:ID') FROM company)"
+        data_source = run(sql, self.data_sources)
+        self.assertListEqual(data_source, [{'公司': 'apple', 'ID': 1},
+                                           {'公司': 'huawei', 'ID': 2},
+                                           {'公司': 'xiaomi', 'ID': 3},
+                                           {'公司': 'xiaomi', 'ID': 4}])
 
-    # def test_nested_funcs(self):
-    #     sql = ("(SELECT SUM(int(mobile.id)) AS sum1, mobile.company_id "
-    #            "FROM mobile "
-    #            "GROUP BY mobile.company_id)")
-    #     data_source = run(sql, self.data_sources)
-    #     self.is_same_val('company_id', data_source, [{'sum1': 3, 'company_id': 3},
-    #                                                  {'sum1': 6, 'company_id': 4},
-    #                                                  {'sum1': 9, 'company_id': 1},
-    #                                                  {'sum1': 6, 'company_id': 2}])
+    def test_nested_funcs(self):
+        sql = ("(SELECT int(SUM(mobile.id)) AS sum1, mobile.company_id "
+               "FROM mobile "
+               "GROUP BY mobile.company_id)")
+        data_source = run(sql, self.data_sources)
+        self.is_same_val('company_id', data_source, [{'sum1': 3, 'company_id': 3},
+                                                     {'sum1': 6, 'company_id': 4},
+                                                     {'sum1': 9, 'company_id': 1},
+                                                     {'sum1': 6, 'company_id': 2}])
 
     # def test_deflate(self):
     #     sql = ("(SELECT deflate(ceo.name, 'ceo_name', mobile_price.type, SUM(mobile_price.price), '0:普通,1:旗舰', 0) "
@@ -351,6 +351,7 @@ class SQLRuleTest(unittest.TestCase):
     #            "GROUP BY ceo.name, mobile_price.type)")
     #
     #     data_source = run(sql, self.data_sources)
+    #     print(data_source)
     #     data_source = sorted(data_source, key=lambda x: x['ceo_name'])
     #     self.assertListEqual(data_source, [{'旗舰': 11000, '普通': 0, 'ceo_name': 'Tim Cook'},
     #                                        {'旗舰': 4000, '普通': 3000, 'ceo_name': 'leijun'},

@@ -1,7 +1,7 @@
 from collections import namedtuple
 from typing import NewType
 
-__all__ = ['SelectStatement', 'SQLToken', 'FROM', 'SELECT', 'HAVING', 'GROUP', 'VAR', 'CONST', 'UNKNOWN', 'STATES',
+__all__ = ['SelectStatement', 'SQLToken', 'FROM', 'SELECT', 'HAVING', 'VAR', 'CONST', 'UNKNOWN', 'STATES',
            'DISTINCT', 'TABLES', 'AS', 'FUNC', 'CASE', 'INNER', 'OUTER', 'ORDER', 'DESC', 'LIMIT', 'LINK',
            'AGGFUNC', 'ResList']
 
@@ -13,12 +13,11 @@ SQLToken = namedtuple('Token', ('tag', 'args'))
 FROM = namedtuple('from_expr', ('tables', 'condition', 'group', 'having'))
 SELECT = namedtuple('select', ('from_expr', 'order', 'limit', 'select'))
 HAVING = namedtuple('having', ('where_or_from', 'group', 'having'))
-GROUP = namedtuple('group', ('where_or_from', 'group'))
 VAR = namedtuple('var', ('name', 'attr', 'func'))
 CONST = namedtuple('const', ('value',))
 UNKNOWN = namedtuple('unknown', ())
 # 语句集合
-STATES = (FROM, SELECT, HAVING, GROUP, VAR, CONST, UNKNOWN)
+STATES = (FROM, SELECT, HAVING, VAR, CONST, UNKNOWN)
 # 节点标签
 NODE = NewType('NODE', int)
 DISTINCT = NODE(1)  # query_expression
@@ -34,7 +33,7 @@ LIMIT = NODE(10)  # offset, limit
 LINK = NODE(11)  # select_statement_id
 AGGFUNC = NODE(12)  # name, *args
 # 结果列表
-ResList = namedtuple('res_list', ('res', 'condition', 'having_expr', 'select_expr'))
+ResList = namedtuple('res_list', ('res', 'condition', 'having_expr', 'select_expr', 'order_expr'))
 
 # 删除引用
 del NewType, namedtuple

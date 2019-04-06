@@ -1,4 +1,5 @@
 from antlr4 import CommonTokenStream, InputStream
+from copy import deepcopy
 
 from gen.MySqlLexer import MySqlLexer
 from gen.MySqlParser import MySqlParser
@@ -7,31 +8,13 @@ from PyLinq.visitor import MySqlVisitor
 from PyLinq.proxy import FuncProxy
 from PyLinq.nodes import *
 
+
+# 聚合函数字典
 agg_funcs = dict()
-
-
-def get_expr(expr):
-    """
-    只用来获取语句的参数
-    """
-    if expr is None:
-        return None
-    if isinstance(expr, SQLToken):
-        return get_expr_dict[expr.tag](expr)
-    return get_expr_dict[expr.__class__](expr)
-
-
-def get_var(var_expr: VAR) -> list:
-    name, attr = get_expr(var_expr.name), get_expr(var_expr.attr)
-    if attr:
-        return [0, name, attr]
-    return [0, name, None]
-
-
-def get_desc(desc_expr: SQLToken) -> list:
-    val: list = get_expr(desc_expr.args)
-    val[0] = 1
-    return val
+# 聚合函数在 select 语句的哪个位置
+agg_position = set()
+# group 语句
+pks = set()
 
 
 def visit_tables(tables_expr: SQLToken, data_sources: dict) -> dict:
@@ -93,7 +76,10 @@ def visit_var(var_expr: VAR, data_sources: dict) -> tuple:
     其中 first 被认为是一个函数
     """
     name = visit(var_expr.name, data_sources)
-    table = data_sources[name]
+    try:
+        table = data_sources[name]
+    except KeyError:
+        return name, ''
     attr, func = visit(var_expr.attr, data_sources), visit(var_expr.func, data_sources)
     if attr:
         value = table[attr]
@@ -131,13 +117,14 @@ def visit_select(select_expr: tuple, data_sources) -> dict:
         return res
 
     for i, expr in enumerate(select_expr[2:]):
-        if has_aggfunc(expr):
+        if i in agg_position:
             if expr.tag == AS:
                 key, value = visit_as(expr, data_sources, str(i))
+                res[key] = value
             else:
                 key, value = expr.args[0], visit_aggfunc(expr, data_sources, str(i))
-            res[key] = value
-        elif isinstance(expr, SQLToken) and expr.tag == FUNC:
+                res = value
+        elif isinstance(expr, SQLToken) and (expr.tag == FUNC or expr.tag == AGGFUNC):
             res[expr.args[0]] = visit(expr, data_sources)
         else:
             key, value = visit(expr, data_sources)
@@ -168,14 +155,24 @@ def visit_as(as_expr: SQLToken, data_sources, str_i=None) -> tuple:
     return rename, res[1] if isinstance(as_expr.args[0], VAR) else res
 
 
+def func_star(data_sources):
+    for table_name, column in data_sources.items():
+        for attr, v in column.items():
+            if (table_name, attr) not in pks:
+                return v
+
+
 def visit_func(func_expr: SQLToken, data_sources):
     func = FuncProxy.get(func_expr.args[0])
     if func is None:
         raise TypeError(f"没有内置函数 `{func_expr.args[0]}`")
     args = []
     for arg in func_expr.args[1:]:
-        _arg = visit(arg, data_sources)
-        args.append(_arg[1] if isinstance(arg, VAR) else _arg)
+        if arg == '*':
+            args.append(func_star(data_sources))
+        else:
+            _arg = visit(arg, data_sources)
+            args.append(_arg[1] if isinstance(arg, VAR) else _arg)
     return func(*args)
 
 
@@ -186,7 +183,10 @@ def visit_aggfunc(aggfunc_expr: SQLToken, data_sources, str_i):
     args = []
     for arg in aggfunc_expr.args[1:]:
         _arg = visit(arg, data_sources)
-        args.append(_arg[1] if isinstance(arg, VAR) else _arg)
+        if _arg == '*':
+            args.append(data_sources)
+        else:
+            args.append(_arg[1] if isinstance(arg, VAR) else _arg)
     return func(*args)
 
 
@@ -204,6 +204,20 @@ def visit_link(link_expr: SQLToken, data_sources) -> list:
         else:
             res.append(line)
     return res
+
+
+def visit_case(case_expr: SQLToken, data_sources: dict):
+    """
+    :param case_expr:
+    :param data_sources: {
+        'student': {'name': 'jay_chou', 'age': 40},
+        'teacher': {'name': 'zzzz', 'year': 5}
+    } 这样的数据, 每一张表只取一行, 凑成的一条数据
+    :return:
+    """
+    for condition, value in case_expr.args:
+        if condition is None or visit(condition, data_sources):
+            return visit(value, data_sources)
 
 
 def visit(sql_expr, data_sources):
@@ -226,17 +240,14 @@ tag_visit_dict = {
     FUNC: visit_func,
     LIMIT: visit_limit,
     LINK: visit_link,
-}
-
-get_expr_dict = {
-    VAR: get_var,
-    CONST: visit_const,
-    DESC: get_desc,
+    AGGFUNC: visit_func,
+    CASE: visit_case,
 }
 
 
 def main_loop(res_list: ResList, data_sources: dict, instance_dict, res: list) -> list:
     """
+    :param has_group:
     :param res_list:
     :param data_sources: {
         'student': [
@@ -279,41 +290,185 @@ def condition_filter(res_list: ResList, instance_dict, res: list) -> list:
     :param res: 结果列表
     :return: 结果列表
     """
+    order = res_list.order_expr
     if res_list.condition:
         if res_list.having_expr:
             if visit(res_list.condition, instance_dict) and visit(res_list.having_expr, instance_dict):
-                res.append(visit_select(res_list.select_expr, instance_dict))
+                # item = visit_select(res_list.select_expr, instance_dict)
+                if order:
+                    index = bisect_left(res, instance_dict, order)
+                    res.insert(index, instance_dict.copy())
+                else:
+                    res.append(visit_select(res_list.select_expr, instance_dict))
         else:
             if visit(res_list.condition, instance_dict):
-                res.append(visit_select(res_list.select_expr, instance_dict))
+                # item = visit_select(res_list.select_expr, instance_dict)
+                if order:
+                    index = bisect_left(res, instance_dict, order)
+                    res.insert(index, instance_dict.copy())
+                else:
+                    res.append(visit_select(res_list.select_expr, instance_dict))
     else:
-        res.append(visit_select(res_list.select_expr, instance_dict))
+        if res_list.having_expr:
+            if visit(res_list.having_expr, instance_dict):
+                # item = visit_select(res_list.select_expr, instance_dict)
+                if order:
+                    index = bisect_left(res, instance_dict, order)
+                    res.insert(index, instance_dict.copy())
+                else:
+                    res.append(visit_select(res_list.select_expr, instance_dict))
+        else:
+            # item = visit_select(res_list.select_expr, instance_dict)
+            if order:
+                index = bisect_left(res, instance_dict, order)
+                res.insert(index, instance_dict.copy())
+            else:
+                res.append(visit_select(res_list.select_expr, instance_dict))
     return res
-
-
-def has_aggfunc(expr) -> bool:
-    if isinstance(expr, SQLToken):
-        if expr.tag == FUNC and expr[0] in FuncProxy.aggr:
-            return True
-        if expr.tag == AGGFUNC:
-            return True
-        if expr.tag == AS:
-            return has_aggfunc(expr.args[0])
-    return False
 
 
 def init_aggfuncs(expr, i=None):
     if isinstance(expr, SQLToken) and i is not None:
-        if expr.tag == AGGFUNC:
+        if expr.tag == AGGFUNC or (expr.tag == FUNC and expr.args[0] in FuncProxy.aggr):
             agg_funcs[expr.args[0] + str(i)] = FuncProxy.get(expr.args[0])
-        elif expr.tag == FUNC and expr.args[0] in FuncProxy.aggr:
-            agg_funcs[expr.args[0] + str(i)] = FuncProxy.get(expr.args[0])
+            agg_position.add(i)
         elif expr.tag == AS:
             sub_expr = expr.args[0]
             init_aggfuncs(sub_expr, i)
     elif isinstance(expr, tuple):
         for i, expr in enumerate(expr[2:]):
             init_aggfuncs(expr, i)
+
+
+def bisect_left(a, x, orders, lo=0, hi=None):
+    """Return the index where to insert item x in list a, assuming a is sorted.
+
+    The return value i is such that all e in a[:i] have e < x, and all e in
+    a[i:] have e >= x.  So if x already appears in the list, a.insert(x) will
+    insert just before the leftmost x already there.
+
+    Optional args lo (default 0) and hi (default len(a)) bound the
+    slice of a to be searched.
+    """
+
+    if lo < 0:
+        raise ValueError('lo must be non-negative')
+    if hi is None:
+        hi = len(a)
+    while lo < hi:
+        mid = (lo+hi)//2
+        if _compare(a[mid], x, orders): lo = mid+1
+        else: hi = mid
+    return lo
+
+
+def _compare(item1, item2, orders):
+    """比较函数"""
+    for order, table_name, attr in orders:
+        v1 = item1[table_name][attr]
+        v2 = item2[table_name][attr]
+        if v1 < v2:
+            return True if order == 0 else False
+        if v1 > v2:
+            return False if order == 0 else True
+    return True
+
+
+def get_var(var_expr: VAR):
+    """
+    :param var_expr:
+    :param instance_dict: {
+        'student': {'name': 'jay_chou', 'age': 40},
+        'teacher': {'name': 'zzzz', 'year': 5}
+    }
+    :return:
+    """
+    return visit(var_expr.name, None), visit(var_expr.attr, None)
+
+
+def get_groups(expr):
+    return set(get_var(sub_expr) for sub_expr in expr)
+
+
+def get_desc_or_var(expr):
+    if isinstance(expr, VAR):
+        return (0, *get_var(expr))
+    return (1, *get_var(expr.args))
+
+
+def get_order(expr):
+    if expr is None:
+        return None
+    return tuple(get_desc_or_var(sub_expr) for sub_expr in expr)
+
+
+def visit_group(group_expr, data_sources):
+    groups = get_groups(group_expr)
+    res_dict = {}
+    res = []
+    i = 0
+    for instance_dict in group_loop(data_sources, {}):
+        _pk = []
+        for table_name, attr in groups:
+            try:
+                _pk.append(instance_dict[table_name][attr])
+            except KeyError:
+                _pk.append(None)
+        pk = tuple(_pk)
+        if pk not in pks:
+            pks.add(pk)
+            res_dict[pk] = i
+            for table_name, pure_instance_dict in instance_dict.items():
+                for attr in pure_instance_dict.keys():
+                    if (table_name, attr) not in groups:
+                        instance_dict[table_name][attr] = [pure_instance_dict[attr]]
+            res.append(instance_dict)
+            i += 1
+        else:
+            for table_name, pure_instance in res[res_dict[pk]].items():
+                for attr in pure_instance.keys():
+                    if (table_name, attr) not in groups:
+                        # print(instance_dict)
+                        try:
+                            pure_instance[attr].append(instance_dict[table_name][attr])
+                        except KeyError:
+                            pass
+    return res
+
+
+def group_loop(data_sources: dict, instance_dict) -> list:
+    """
+    :param has_group:
+    :param res_list:
+    :param data_sources: {
+        'student': [
+                     {'name': 'jay_chou', 'age': 40},
+                     {'name': 'zhang_xx', 'age': 30}
+                   ],
+        'teacher': [
+                     {'name': 'xxx', 'year': 4},
+                     {'name': 'yyy', 'year': 5}
+                   ]
+    } 这样的表数据
+    :param instance_dict: {
+        'student': {'name': 'jay_chou', 'age': 40},
+        'teacher': {'name': 'zzzz', 'year': 5}
+    } 这样的数据, 每一张表只取一行, 凑成的一条数据
+    :param res:
+    :return:
+    """
+    # 取出一张表
+    name, instances = data_sources.popitem()
+    for instance in instances:
+        instance_dict[name] = instance
+        # 如果是最后一张表,处理一行,否则取出下一张表
+        if not data_sources:
+            yield deepcopy(instance_dict)
+        else:
+            for res in group_loop(data_sources, instance_dict):
+                yield res
+        # 处理完将本条记录删除
+        del instance_dict[name]
 
 
 def sql_interpreter(sql_expr: SELECT, data_sources: dict) -> list:
@@ -324,17 +479,27 @@ def sql_interpreter(sql_expr: SELECT, data_sources: dict) -> list:
     """
     data_sources = visit(sql_expr.from_expr.tables, data_sources)
     from_expr = sql_expr.from_expr
-    res_list = ResList([], from_expr.condition, from_expr.having, sql_expr.select)
+    res_list = ResList([], from_expr.condition, from_expr.having, sql_expr.select, get_order(sql_expr.order))
     limit = sql_expr.limit
 
-    # 构造聚合函数
-    init_aggfuncs(sql_expr.select)
-
-    res = main_loop(res_list, data_sources, {}, [])
-    # 如果有聚合函数
-    if agg_funcs:
-        agg_funcs.clear()
-        return [res[-1]]
+    group_expr = from_expr.group
+    if group_expr:
+        data_sources, res = visit_group(group_expr, data_sources), []
+        for data_source in data_sources:
+            condition_filter(res_list, data_source, res)
+        pks.clear()
+    else:
+        # 构造聚合函数
+        init_aggfuncs(sql_expr.select)
+        res = main_loop(res_list, data_sources, {}, [])
+        # 如果有聚合函数
+        if agg_funcs:
+            agg_funcs.clear()
+            agg_position.clear()
+            return res[-1] if isinstance(res[-1], list) else [res[-1]]
+    # 如果有排序
+    if res_list.order_expr:
+        res = [visit_select(res_list.select_expr, instance_dict) for instance_dict in res]
     return visit(limit, res) if limit else res
 
 

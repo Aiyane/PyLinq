@@ -125,7 +125,12 @@ class MySqlVisitor(MySqlParserVisitor):
           (constant | fullColumnName | functionCall | expression)
         )*
         """
-        return tuple(self.visit(children) for children in ctx.children)
+        res = []
+        for children in ctx.children:
+            val = self.visit(children)
+            if val is not None:
+                res.append(val)
+        return tuple(res)
 
     def visitTableSourceNested(self, ctx: MySqlParser.TableSourceNestedContext) -> SQLToken:
         """
@@ -211,8 +216,9 @@ class MySqlVisitor(MySqlParserVisitor):
         """
         ORDER BY orderByExpression (',' orderByExpression)*
         """
-        order_by_expressions = tuple(self.visit(expression) for expression in ctx.orderByExpression())
-        return SQLToken(ORDER, order_by_expressions)
+        # order_by_expressions = tuple(self.visit(expression) for expression in ctx.orderByExpression())
+        # return SQLToken(ORDER, order_by_expressions)
+        return tuple(self.visit(expression) for expression in ctx.orderByExpression())
 
     def visitOrderByExpression(self, ctx: MySqlParser.OrderByExpressionContext) -> SQLToken:
         """
@@ -486,7 +492,7 @@ class MySqlVisitor(MySqlParserVisitor):
                 return SQLToken(AGGFUNC, ('sum', SQLToken(DISTINCT, arg)))
             return SQLToken(AGGFUNC, ('sum', arg))
         if ctx.STAR():
-            return SQLToken(AGGFUNC, ('count', True))
+            return SQLToken(AGGFUNC, ('count', '*'))
         if ctx.DISTINCT():
             args = self.visit(ctx.functionArgs())
             return SQLToken(AGGFUNC, ('count', SQLToken(DISTINCT, args)))
@@ -501,7 +507,7 @@ class MySqlVisitor(MySqlParserVisitor):
         func_args = ctx.functionArgs()
         if func_args:
             func_args = self.visit(func_args)
-            return SQLToken(FUNC, (func_name, func_args))
+            return SQLToken(FUNC, (func_name, *func_args))
         return SQLToken(FUNC, (func_name,))
 
     def visitUnaryExpressionAtom(self, ctx: MySqlParser.UnaryExpressionAtomContext) -> SQLToken:

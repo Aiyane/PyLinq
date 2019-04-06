@@ -84,6 +84,70 @@ def count_wrap():
     return count
 
 
+@register_func("rename", is_aggr=True)
+def rename_wrap():
+    val = []
+    rename_fields_dict = {}
+
+    def rename(items, rename_fields_str):
+        nonlocal val, rename_fields_dict
+        if not items:
+            return val
+        try:
+            item = next(iter(items.values()))
+
+            if not rename_fields_dict:
+                for rename_field in rename_fields_str.split(","):
+                    old_key, new_key = rename_field.split(":")
+                    rename_fields_dict[old_key] = new_key
+
+            for old_key, new_key in rename_fields_dict.items():
+                if old_key in item:
+                    item[new_key] = item.pop(old_key)
+
+        except Exception as e:
+            logging.warning("RenameAggr: ", e)
+        else:
+            val.append(item)
+        return val
+    return rename
+
+
+# @register_func("DEFLATE", is_aggr=True)
+# def deflate_wrap():
+#     master_vals = {}
+#     vals = []
+#     rename_fields_dict = {}
+#
+#     def deflate(master_key, master_name, slave_key, rename_field_val, rename_fields_str, default_val=None):
+#         nonlocal master_vals, vals, rename_fields_dict
+#         try:
+#             if not rename_fields_dict:
+#                 for rename_field in rename_fields_str.split(","):
+#                     old_key, new_key = rename_field.split(":")
+#                     rename_fields_dict[old_key] = new_key
+#
+#             if master_key not in master_vals:
+#                 master_val = {
+#                     master_name: master_key,
+#                     **{
+#                         rename_field: default_val
+#                         for rename_field
+#                         in rename_fields_dict.values()
+#                     }
+#                 }
+#                 master_vals[master_key] = master_val
+#                 vals.append(master_val)
+#
+#             rename_field = rename_fields_dict.get(str(slave_key), None)
+#             if rename_field:
+#                 master_vals[master_key][rename_field] = rename_field_val
+#         except Exception as e:
+#             logging.warning("DeflateAggr: ", e)
+#         return vals
+#     return deflate
+
+
 @register_func("sum", is_aggr=True)
 def sum_wrap():
     s = 0
