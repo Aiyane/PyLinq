@@ -269,15 +269,6 @@ class MySqlParserListener(ParseTreeListener):
         pass
 
 
-    # Enter a parse tree produced by MySqlParser#aggregateFunctionCall.
-    def enterAggregateFunctionCall(self, ctx:MySqlParser.AggregateFunctionCallContext):
-        pass
-
-    # Exit a parse tree produced by MySqlParser#aggregateFunctionCall.
-    def exitAggregateFunctionCall(self, ctx:MySqlParser.AggregateFunctionCallContext):
-        pass
-
-
     # Enter a parse tree produced by MySqlParser#scalarFunctionCall.
     def enterScalarFunctionCall(self, ctx:MySqlParser.ScalarFunctionCallContext):
         pass
@@ -302,15 +293,6 @@ class MySqlParserListener(ParseTreeListener):
 
     # Exit a parse tree produced by MySqlParser#caseFuncAlternative.
     def exitCaseFuncAlternative(self, ctx:MySqlParser.CaseFuncAlternativeContext):
-        pass
-
-
-    # Enter a parse tree produced by MySqlParser#aggregateWindowedFunction.
-    def enterAggregateWindowedFunction(self, ctx:MySqlParser.AggregateWindowedFunctionContext):
-        pass
-
-    # Exit a parse tree produced by MySqlParser#aggregateWindowedFunction.
-    def exitAggregateWindowedFunction(self, ctx:MySqlParser.AggregateWindowedFunctionContext):
         pass
 
 

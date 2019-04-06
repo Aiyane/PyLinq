@@ -5,7 +5,7 @@ import logging
 class FuncProxy:
     """
     代理 SQL 内建函数类。
-    sql_funcs: 保存 sql 中函数名为 key，funcs 包中相应的闭包函数为 value。
+    sql_funcs: 保存 sql 中函数名为 key，functions 包中相应的闭包函数为 value。
     """
     aggr = set()
     sql_funcs = {

@@ -3,7 +3,7 @@ from typing import NewType
 
 __all__ = ['SelectStatement', 'SQLToken', 'FROM', 'SELECT', 'HAVING', 'VAR', 'CONST', 'UNKNOWN', 'STATES',
            'DISTINCT', 'TABLES', 'AS', 'FUNC', 'CASE', 'INNER', 'OUTER', 'ORDER', 'DESC', 'LIMIT', 'LINK',
-           'AGGFUNC', 'ResList']
+           'AGGFUNC', 'ResList', 'EXPR']
 
 # select 语句
 SelectStatement = namedtuple('Root', ('id', 'tree'))
@@ -34,7 +34,15 @@ LINK = NODE(11)  # select_statement_id
 AGGFUNC = NODE(12)  # name, *args
 # 结果列表
 ResList = namedtuple('res_list', ('res', 'condition', 'having_expr', 'select_expr', 'order_expr'))
-
+EXPR = namedtuple('sql_interpreter', (
+    'from_expr',
+    'where_expr',
+    'group_expr',
+    'having_expr',
+    'order_expr',
+    'limit_expr',
+    'select_expr'
+))
 # 删除引用
 del NewType, namedtuple
 

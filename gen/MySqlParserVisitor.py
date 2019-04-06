@@ -154,11 +154,6 @@ class MySqlParserVisitor(ParseTreeVisitor):
         return self.visitChildren(ctx)
 
 
-    # Visit a parse tree produced by MySqlParser#aggregateFunctionCall.
-    def visitAggregateFunctionCall(self, ctx:MySqlParser.AggregateFunctionCallContext):
-        return self.visitChildren(ctx)
-
-
     # Visit a parse tree produced by MySqlParser#scalarFunctionCall.
     def visitScalarFunctionCall(self, ctx:MySqlParser.ScalarFunctionCallContext):
         return self.visitChildren(ctx)
@@ -171,11 +166,6 @@ class MySqlParserVisitor(ParseTreeVisitor):
 
     # Visit a parse tree produced by MySqlParser#caseFuncAlternative.
     def visitCaseFuncAlternative(self, ctx:MySqlParser.CaseFuncAlternativeContext):
-        return self.visitChildren(ctx)
-
-
-    # Visit a parse tree produced by MySqlParser#aggregateWindowedFunction.
-    def visitAggregateWindowedFunction(self, ctx:MySqlParser.AggregateWindowedFunctionContext):
         return self.visitChildren(ctx)
 
 

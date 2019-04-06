@@ -140,7 +140,7 @@ expressions
 // 24
 functionCall
     : specificFunction                                              #specificFunctionCall
-    | aggregateWindowedFunction                                     #aggregateFunctionCall
+//    | aggregateWindowedFunction                                     #aggregateFunctionCall
     | ID '(' functionArgs? ')'                                      #scalarFunctionCall
     ;
 
@@ -156,20 +156,20 @@ caseFuncAlternative
       THEN consequent=functionArg
     ;
 
-// 27
-aggregateWindowedFunction
-    : (AVG | MAX | MIN | SUM)
-      '(' aggregator=(ALL | DISTINCT)? functionArg ')'
-    | COUNT '(' (starArg='*' | aggregator=ALL? functionArg) ')'
-    | COUNT '(' aggregator=DISTINCT functionArgs ')'
-    ;
+//// 27
+//aggregateWindowedFunction
+//    : (AVG | MAX | MIN | SUM)
+//      '(' aggregator=(ALL | DISTINCT)? functionArg ')'
+//    | COUNT '(' (starArg='*' | aggregator=ALL? functionArg) ')'
+//    | COUNT '(' aggregator=DISTINCT functionArgs ')'
+//    ;
 
 // 28
 functionArgs
-    : (constant | fullColumnName | functionCall | expression)
+    : ('*' | ALL | constant | fullColumnName | functionCall | expression)
     (
       ','
-      (constant | fullColumnName | functionCall | expression)
+      ('*' | ALL | constant | fullColumnName | functionCall | expression)
     )*
     ;
 

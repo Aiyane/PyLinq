@@ -1,6 +1,6 @@
 import unittest
 
-from PyLinq.interpreter import run
+from PyLinq.api import sql_run as run
 
 
 class SQLRuleTest(unittest.TestCase):
@@ -190,20 +190,22 @@ class SQLRuleTest(unittest.TestCase):
         self.assertListEqual(data_source, [{'count1': 7}])
 
     def test_group_sql4(self):
-        sql = ("(SELECT mobile.company_id, COUNT(*) AS count1 "
+        sql = ("(SELECT mobile.company_id, icount(*) AS count1 "
                "FROM mobile "
                "GROUP BY mobile.company_id)")
         data_source = run(sql, self.data_sources)
+        print(data_source)
         self.is_same_val('company_id', data_source, [{'company_id': 3, 'count1': 2},
                                                      {'company_id': 4, 'count1': 2},
                                                      {'company_id': 1, 'count1': 2},
                                                      {'company_id': 2, 'count1': 1}])
 
     def test_having_sql1(self):
-        sql = ("(SELECT mobile.company_id, COUNT(*) AS count1 "
+        sql = ("(SELECT mobile.company_id, icount(*) AS count1 "
                "FROM mobile GROUP BY mobile.company_id "
                "HAVING COUNT(*) >= 2 AND mobile.company_id != 4)")
         data_source = run(sql, self.data_sources)
+        print(data_source)
         self.is_same_val('company_id', data_source, [{'count1': 2, 'company_id': 3},
                                                      {'count1': 2, 'company_id': 1}])
 
@@ -325,7 +327,7 @@ class SQLRuleTest(unittest.TestCase):
                                            {'company_name': '小米'}])
 
     def test_rename_funcs(self):
-        sql = "(SELECT rename('*', 'name:公司,id:ID') FROM company)"
+        sql = "(SELECT rename('公司,ID', company.name, company.id) FROM company)"
         data_source = run(sql, self.data_sources)
         self.assertListEqual(data_source, [{'公司': 'apple', 'ID': 1},
                                            {'公司': 'huawei', 'ID': 2},
@@ -342,30 +344,29 @@ class SQLRuleTest(unittest.TestCase):
                                                      {'sum1': 9, 'company_id': 1},
                                                      {'sum1': 6, 'company_id': 2}])
 
-    # def test_deflate(self):
-    #     sql = ("(SELECT deflate(ceo.name, 'ceo_name', mobile_price.type, SUM(mobile_price.price), '0:普通,1:旗舰', 0) "
-    #            "FROM mobile, company, ceo, mobile_price "
-    #            "WHERE mobile.id = mobile_price.mobile_id "
-    #            "AND mobile.company_id = company.id "
-    #            "AND company.id = ceo.company_id "
-    #            "GROUP BY ceo.name, mobile_price.type)")
-    #
-    #     data_source = run(sql, self.data_sources)
-    #     print(data_source)
-    #     data_source = sorted(data_source, key=lambda x: x['ceo_name'])
-    #     self.assertListEqual(data_source, [{'旗舰': 11000, '普通': 0, 'ceo_name': 'Tim Cook'},
-    #                                        {'旗舰': 4000, '普通': 3000, 'ceo_name': 'leijun'},
-    #                                        {'旗舰': 7000, '普通': 0, 'ceo_name': 'renzhengfei'}])
+    def test_deflate(self):
+        sql = ("(SELECT deflate(ceo.name, 'ceo_name', mobile_price.type, SUM(mobile_price.price), '0:普通,1:旗舰', 0) "
+               "FROM mobile, company, ceo, mobile_price "
+               "WHERE mobile.id = mobile_price.mobile_id "
+               "AND mobile.company_id = company.id "
+               "AND company.id = ceo.company_id "
+               "GROUP BY ceo.name, mobile_price.type)")
 
-    # def test_deflate2(self):
-    #     self.data_sources['company'] = []
-    #     sql = ("(SELECT deflate(ceo.name, 'ceo_name', mobile_price.type, SUM(mobile_price.price), '0:普通,1:旗舰', 0) "
-    #            "FROM mobile, company, ceo, mobile_price "
-    #            "WHERE mobile.id = mobile_price.mobile_id "
-    #            "AND mobile.company_id = company.id "
-    #            "AND company.id = ceo.company_id "
-    #            "GROUP BY ceo.name, mobile_price.type)")
-    #
-    #     data_source = run(sql, self.data_sources)
-    #     data_source = sorted(data_source, key=lambda x: x['ceo_name'])
-    #     self.assertListEqual(data_source, [])
+        data_source = run(sql, self.data_sources)
+        data_source = sorted(data_source, key=lambda x: x['ceo_name'])
+        self.assertListEqual(data_source, [{'旗舰': 11000, '普通': 0, 'ceo_name': 'Tim Cook'},
+                                           {'旗舰': 4000, '普通': 3000, 'ceo_name': 'leijun'},
+                                           {'旗舰': 7000, '普通': 0, 'ceo_name': 'renzhengfei'}])
+
+    def test_deflate2(self):
+        self.data_sources['company'] = []
+        sql = ("(SELECT deflate(ceo.name, 'ceo_name', mobile_price.type, SUM(mobile_price.price), '0:普通,1:旗舰', 0) "
+               "FROM mobile, company, ceo, mobile_price "
+               "WHERE mobile.id = mobile_price.mobile_id "
+               "AND mobile.company_id = company.id "
+               "AND company.id = ceo.company_id "
+               "GROUP BY ceo.name, mobile_price.type)")
+
+        data_source = run(sql, self.data_sources)
+        data_source = sorted(data_source, key=lambda x: x['ceo_name'])
+        self.assertListEqual(data_source, [])

@@ -1,1 +1,1 @@
-from PyLinq.funcs import *
+from PyLinq.functions import *

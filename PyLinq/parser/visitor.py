@@ -1,6 +1,6 @@
 from gen.MySqlParserVisitor import MySqlParserVisitor
 from gen.MySqlParser import MySqlParser
-from PyLinq.nodes import *
+from PyLinq.parser.nodes import *
 from queue import Queue
 
 
@@ -119,17 +119,20 @@ class MySqlVisitor(MySqlParserVisitor):
 
     def visitFunctionArgs(self, ctx: MySqlParser.FunctionArgsContext) -> SQLToken:
         """
-        (constant | fullColumnName | functionCall | expression)
+        ('*' | ALL | constant | fullColumnName | functionCall | expression)
         (
           ','
-          (constant | fullColumnName | functionCall | expression)
+          ('*' | ALL | constant | fullColumnName | functionCall | expression)
         )*
         """
         res = []
         for children in ctx.children:
-            val = self.visit(children)
-            if val is not None:
-                res.append(val)
+            if children.getText() in ('*', 'ALL'):
+                res.append(CONST('*'))
+            else:
+                val = self.visit(children)
+                if val is not None:
+                    res.append(val)
         return tuple(res)
 
     def visitTableSourceNested(self, ctx: MySqlParser.TableSourceNestedContext) -> SQLToken:
@@ -468,36 +471,36 @@ class MySqlVisitor(MySqlParserVisitor):
         """
         return self.visit(ctx.functionArg(0)), self.visit(ctx.functionArg(1))
 
-    def visitAggregateWindowedFunction(self, ctx: MySqlParser.AggregateWindowedFunctionContext) -> SQLToken:
-        """
-        (AVG | MAX | MIN | SUM)
-        '(' aggregator=(ALL | DISTINCT)? functionArg ')'
-        | COUNT '(' (starArg='*' | aggregator=ALL? functionArg) ')'
-        | COUNT '(' aggregator=DISTINCT functionArgs ')'
-        """
-        if ctx.AVG():
-            arg = self.visit(ctx.functionArg())
-            if ctx.DISTINCT():
-                return SQLToken(AGGFUNC, ('avg', SQLToken(DISTINCT, arg)))
-            return SQLToken(AGGFUNC, ('avg', arg))
-        if ctx.MAX():
-            arg = self.visit(ctx.functionArg())
-            return SQLToken(AGGFUNC, ('max', arg))
-        if ctx.MIN():
-            arg = self.visit(ctx.functionArg())
-            return SQLToken(AGGFUNC, ('min', arg))
-        if ctx.SUM():
-            arg = self.visit(ctx.functionArg())
-            if ctx.DISTINCT():
-                return SQLToken(AGGFUNC, ('sum', SQLToken(DISTINCT, arg)))
-            return SQLToken(AGGFUNC, ('sum', arg))
-        if ctx.STAR():
-            return SQLToken(AGGFUNC, ('count', '*'))
-        if ctx.DISTINCT():
-            args = self.visit(ctx.functionArgs())
-            return SQLToken(AGGFUNC, ('count', SQLToken(DISTINCT, args)))
-        arg = self.visit(ctx.functionArg())
-        return SQLToken(AGGFUNC, ('count', arg))
+    # def visitAggregateWindowedFunction(self, ctx: MySqlParser.AggregateWindowedFunctionContext) -> SQLToken:
+    #     """
+    #     (AVG | MAX | MIN | SUM)
+    #     '(' aggregator=(ALL | DISTINCT)? functionArg ')'
+    #     | COUNT '(' (starArg='*' | aggregator=ALL? functionArg) ')'
+    #     | COUNT '(' aggregator=DISTINCT functionArgs ')'
+    #     """
+    #     if ctx.AVG():
+    #         arg = self.visit(ctx.functionArg())
+    #         if ctx.DISTINCT():
+    #             return SQLToken(AGGFUNC, ('avg', SQLToken(DISTINCT, arg)))
+    #         return SQLToken(AGGFUNC, ('avg', arg))
+    #     if ctx.MAX():
+    #         arg = self.visit(ctx.functionArg())
+    #         return SQLToken(AGGFUNC, ('max', arg))
+    #     if ctx.MIN():
+    #         arg = self.visit(ctx.functionArg())
+    #         return SQLToken(AGGFUNC, ('min', arg))
+    #     if ctx.SUM():
+    #         arg = self.visit(ctx.functionArg())
+    #         if ctx.DISTINCT():
+    #             return SQLToken(AGGFUNC, ('sum', SQLToken(DISTINCT, arg)))
+    #         return SQLToken(AGGFUNC, ('sum', arg))
+    #     if ctx.STAR():
+    #         return SQLToken(AGGFUNC, ('count', '*'))
+    #     if ctx.DISTINCT():
+    #         args = self.visit(ctx.functionArgs())
+    #         return SQLToken(AGGFUNC, ('count', SQLToken(DISTINCT, args)))
+    #     arg = self.visit(ctx.functionArg())
+    #     return SQLToken(AGGFUNC, ('count', arg))
 
     def visitScalarFunctionCall(self, ctx: MySqlParser.ScalarFunctionCallContext) -> SQLToken:
         """
@@ -507,8 +510,8 @@ class MySqlVisitor(MySqlParserVisitor):
         func_args = ctx.functionArgs()
         if func_args:
             func_args = self.visit(func_args)
-            return SQLToken(FUNC, (func_name, *func_args))
-        return SQLToken(FUNC, (func_name,))
+            return SQLToken(FUNC, (func_name.lower(), *func_args))
+        return SQLToken(FUNC, (func_name.lower(),))
 
     def visitUnaryExpressionAtom(self, ctx: MySqlParser.UnaryExpressionAtomContext) -> SQLToken:
         """

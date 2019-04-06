@@ -55,11 +55,11 @@ WHEN:                                'WHEN';
 WHERE:                               'WHERE';
 
 //// Group function Keywords
-AVG:                                 'AVG';
-COUNT:                               'COUNT';
-MAX:                                 'MAX';
-MIN:                                 'MIN';
-SUM:                                 'SUM';
+//AVG:                                 'AVG';
+//COUNT:                               'COUNT';
+//MAX:                                 'MAX';
+//MIN:                                 'MIN';
+//SUM:                                 'SUM';
 
 //// Common Keywords, but can be ID
 //
