@@ -194,7 +194,6 @@ class SQLRuleTest(unittest.TestCase):
                "FROM mobile "
                "GROUP BY mobile.company_id)")
         data_source = run(sql, self.data_sources)
-        print(data_source)
         self.is_same_val('company_id', data_source, [{'company_id': 3, 'count1': 2},
                                                      {'company_id': 4, 'count1': 2},
                                                      {'company_id': 1, 'count1': 2},
@@ -205,7 +204,6 @@ class SQLRuleTest(unittest.TestCase):
                "FROM mobile GROUP BY mobile.company_id "
                "HAVING COUNT(*) >= 2 AND mobile.company_id != 4)")
         data_source = run(sql, self.data_sources)
-        print(data_source)
         self.is_same_val('company_id', data_source, [{'count1': 2, 'company_id': 3},
                                                      {'count1': 2, 'company_id': 1}])
 

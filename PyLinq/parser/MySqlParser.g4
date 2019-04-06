@@ -156,14 +156,6 @@ caseFuncAlternative
       THEN consequent=functionArg
     ;
 
-//// 27
-//aggregateWindowedFunction
-//    : (AVG | MAX | MIN | SUM)
-//      '(' aggregator=(ALL | DISTINCT)? functionArg ')'
-//    | COUNT '(' (starArg='*' | aggregator=ALL? functionArg) ')'
-//    | COUNT '(' aggregator=DISTINCT functionArgs ')'
-//    ;
-
 // 28
 functionArgs
     : ('*' | ALL | constant | fullColumnName | functionCall | expression)

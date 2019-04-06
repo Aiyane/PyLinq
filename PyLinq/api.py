@@ -1,7 +1,7 @@
 from antlr4 import CommonTokenStream, InputStream
 
-from gen.MySqlLexer import MySqlLexer
-from gen.MySqlParser import MySqlParser
+from PyLinq.gen.MySqlLexer import MySqlLexer
+from PyLinq.gen.MySqlParser import MySqlParser
 
 from PyLinq.interpreters import simple_interpreter, order_interpreter, group_interpreter, group_order_interpreter
 from PyLinq.parser.visitor import MySqlVisitor
