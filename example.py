@@ -1,8 +1,8 @@
-from PyLinq.interpreter import run
+from PyLinq.api import sql_run
 
 
 def main(sql_expr: str, data_sources: dict):
-    print(run(sql_expr, data_sources))
+    print(sql_run(sql_expr, data_sources))
 
 
 if __name__ == '__main__':

@@ -73,7 +73,7 @@ class MySqlVisitor(MySqlParserVisitor):
         alis = ctx.ID()
         return SQLToken(AS, (name, CONST(alis.getText()))) if alis else name
 
-    def visitSelectElements(self, ctx: MySqlParser.SelectElementsContext) -> SQLToken:
+    def visitSelectElements(self, ctx: MySqlParser.SelectElementsContext):
         """
         (star='*' | selectElement ) (',' selectElement)*
         """
