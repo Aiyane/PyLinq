@@ -2,9 +2,7 @@
 
 ### 介绍
 
-开发中。
-
-计划实现一个执行 SQL SELECT 语句的 Python 工具。
+一个执行 SQL SELECT 语句的 Python 工具。
 
 将 Python 中 dict 类型类比为 SQL 中数据库，使用 SQL 语句对 dict 对象进行 SELECT 操作。
 
@@ -32,3 +30,7 @@ data_sources = {
 python 3.5 及以上
 
 pip 安装 antlr4-python3-runtime
+
+### 使用
+
+请看 `example.py` 与 `test_linq.py` 文件的实例。
