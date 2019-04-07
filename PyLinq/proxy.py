@@ -66,12 +66,12 @@ class FuncProxy:
         'between': lambda: lambda x, s, e: s <= x <= e,
         'not_regexp': lambda: lambda x, y: re.match(y, x) is None,
         'regexp': lambda: lambda x, y: re.match(y, x) is not None,
-        'like': lambda: lambda x, y: re.match(y.replace('.', '\\.').replace('^', '\\^').replace('$', '\\$').replace(
-            '*', '\\*').replace('+', '\\+').replace('?', '\\?').replace('{', '\\{').replace('}', '\\}').replace(
-            '\\', '\\\\').replace('|', '\\|').replace('(', '\\(').replace(')', '\\)').replace('%', '.*'), x) is not None,
-        'not_like': lambda x, y: re.match(y.replace('.', '\\.').replace('^', '\\^').replace('$', '\\$').replace(
-            '*', '\\*').replace('+', '\\+').replace('?', '\\?').replace('{', '\\{').replace('}', '\\}').replace(
-            '\\', '\\\\').replace('|', '\\|').replace('(', '\\(').replace(')', '\\)').replace('%', '.*'), x) is None,
+        'like': lambda: lambda x, y: re.match(y.replace('\\', '\\\\').replace('.', '\\.').replace('^', '\\^').replace(
+            '$', '\\$').replace('*', '\\*').replace('+', '\\+').replace('?', '\\?').replace('{', '\\{').replace(
+            '}', '\\}').replace('|', '\\|').replace('(', '\\(').replace(')', '\\)').replace('%', '.*'), x) is not None,
+        'not_like': lambda x, y: re.match(y.replace('\\', '\\\\').replace('.', '\\.').replace('^', '\\^').replace(
+            '$', '\\$').replace('*', '\\*').replace('+', '\\+').replace('?', '\\?').replace('{', '\\{').replace(
+            '}', '\\}').replace('|', '\\|').replace('(', '\\(').replace(')', '\\)').replace('%', '.*'), x) is None,
     }
 
     @classmethod
