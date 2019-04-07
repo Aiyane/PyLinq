@@ -30,24 +30,6 @@ def run(expr: EXPR, data_sources: dict, env: dict) -> list:
     return res
 
 
-def main_loop(data_sources: dict, instance_dict, where_expr, env):
-    name, instances = data_sources.popitem()
-    for instance in instances:
-        instance_dict[name] = instance
-        # 如果是最后一张表,处理一行,否则取出下一张表
-        if not data_sources:
-            if where_expr:
-                if visit(where_expr, instance_dict, env):
-                    yield deepcopy(instance_dict)
-            else:
-                yield deepcopy(instance_dict)
-        else:
-            for res in main_loop(data_sources.copy(), instance_dict, where_expr, env):
-                yield res
-        # 处理完将本条记录删除
-        del instance_dict[name]
-
-
 def condition_filter(expr: EXPR, instance_dict, res: list, env):
     if (not expr.having_expr) or expr.having_expr and group_visit(expr.having_expr, instance_dict, env):
         res.append(group_visit_select(expr.select_expr, instance_dict, env))
