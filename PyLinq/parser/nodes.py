@@ -1,7 +1,7 @@
 from collections import namedtuple
 from typing import NewType
 
-__all__ = ['SelectStatement', 'SQLToken', 'FROM', 'SELECT', 'HAVING', 'VAR', 'CONST', 'UNKNOWN', 'STATES',
+__all__ = ['SelectStatement', 'SQLToken', 'FROM', 'SELECT', 'VAR', 'CONST', 'UNKNOWN', 'STATES',
            'TABLES', 'AS', 'FUNC', 'CASE', 'INNER', 'OUTER', 'ORDER', 'DESC', 'LIMIT', 'LINK', 'EXPR']
 
 # select 语句
@@ -11,12 +11,11 @@ SQLToken = namedtuple('Token', ('tag', 'args'))
 # 子语句
 FROM = namedtuple('from_expr', ('tables', 'condition', 'group', 'having'))
 SELECT = namedtuple('select', ('from_expr', 'order', 'limit', 'select'))
-HAVING = namedtuple('having', ('where_or_from', 'group', 'having'))
 VAR = namedtuple('var', ('name', 'attr', 'func'))
 CONST = namedtuple('const', ('value',))
 UNKNOWN = namedtuple('unknown', ())
 # 语句集合
-STATES = (FROM, SELECT, HAVING, VAR, CONST, UNKNOWN)
+STATES = (FROM, SELECT, VAR, CONST, UNKNOWN)
 # 节点标签
 NODE = NewType('NODE', int)
 TABLES = NODE(2)  # tables
