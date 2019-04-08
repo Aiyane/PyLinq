@@ -365,7 +365,7 @@ class MySqlVisitor(MySqlParserVisitor):
         left = self.visit(ctx.predicate())
         op = self.visit(ctx.comparisonOperator())
         select_statement = self.visit(ctx.selectStatement())
-        return SQLToken(FUNC, (ctx.quantifier.text + op, left, select_statement.id))
+        return SQLToken(FUNC, (ctx.quantifier.text + op, left, select_statement))
 
     def visitBetweenPredicate(self, ctx: MySqlParser.BetweenPredicateContext) -> SQLToken:
         """
