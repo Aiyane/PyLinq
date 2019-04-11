@@ -22,6 +22,8 @@ class FuncProxy:
         '*': lambda: lambda x, y: x * y,
         '/': lambda: lambda x, y: x / y,
         '%': lambda: lambda x, y: x % y,
+        'div': lambda: lambda x, y: x / y,
+        'mod': lambda: lambda x, y: x % y,
         'exits': lambda: lambda x: any(x),
         'is': lambda: lambda x, y: x is y,
         'is_not': lambda: lambda x, y: x is not y,

@@ -193,14 +193,15 @@ predicate
 
 // 32
 expressionAtom
-    : constant                                                      #constantExpressionAtom
-    | fullColumnName                                                #fullColumnNameExpressionAtom
-    | functionCall                                                  #functionCallExpressionAtom
-    | unaryOperator expressionAtom                                  #unaryExpressionAtom
-    | '(' expression (',' expression)* ')'                          #nestedExpressionAtom
-    | EXISTS '(' selectStatement ')'                                #existsExpressionAtom
-    | '(' selectStatement ')'                                       #subqueryExpressionAtom
-    | left=expressionAtom mathOperator right=expressionAtom         #mathExpressionAtom
+    : constant                                                              #constantExpressionAtom
+    | fullColumnName                                                        #fullColumnNameExpressionAtom
+    | functionCall                                                          #functionCallExpressionAtom
+    | unaryOperator expressionAtom                                          #unaryExpressionAtom
+    | '(' expression (',' expression)* ')'                                  #nestedExpressionAtom
+    | EXISTS '(' selectStatement ')'                                        #existsExpressionAtom
+    | '(' selectStatement ')'                                               #subqueryExpressionAtom
+    | left=expressionAtom op=('*'|'/'|'%'| DIV | MOD) right=expressionAtom  #priorityMathExpressionAtom
+    | left=expressionAtom mathOperator right=expressionAtom                 #mathExpressionAtom
     ;
 
 // 33
@@ -221,5 +222,5 @@ logicalOperator
 
 // 36
 mathOperator
-    : '*' | '/' | '%' | DIV | MOD | '+' | '-' | '--'
+    : '+' | '-' | '--'
     ;

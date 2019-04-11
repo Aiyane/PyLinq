@@ -130,6 +130,13 @@ class SQLRuleTest(unittest.TestCase):
         other_val = sorted(other_val, key=lambda x: x[sort_key])
         self.assertListEqual(one_val, other_val)
 
+    def test_cale_sql(self):
+        sql = ('(SELECT company.id+2*3 AS id '
+               'FROM company '
+               'WHERE company.name = "apple")')
+        data_source = run(sql, self.data_sources)
+        self.assertListEqual(data_source, [{'id': 7}])
+
     def test_simple_sql1(self):
         sql = ('(SELECT * '
                'FROM mobile '

@@ -1,4 +1,4 @@
-# Generated from /Users/zhangzhiqiang/PycharmProjects/test/PyLinq/MySqlParser.g4 by ANTLR 4.7.2
+# Generated from /Users/zhangzhiqiang/PycharmProjects/PyLinq/PyLinq/parser/MySqlParser.g4 by ANTLR 4.7.2
 from antlr4 import *
 if __name__ is not None and "." in __name__:
     from .MySqlParser import MySqlParser
@@ -246,6 +246,11 @@ class MySqlParserVisitor(ParseTreeVisitor):
 
     # Visit a parse tree produced by MySqlParser#subqueryExpressionAtom.
     def visitSubqueryExpressionAtom(self, ctx:MySqlParser.SubqueryExpressionAtomContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by MySqlParser#priorityMathExpressionAtom.
+    def visitPriorityMathExpressionAtom(self, ctx:MySqlParser.PriorityMathExpressionAtomContext):
         return self.visitChildren(ctx)
 
 

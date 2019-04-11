@@ -191,6 +191,8 @@ def visit(sql_expr, data_sources, env, index=None):
     if isinstance(sql_expr, SQLToken):
         return visit_dict[sql_expr.tag](sql_expr, data_sources, env, index)
     if isinstance(sql_expr, (list, tuple, set)):
+        if len(sql_expr) == 1:
+            return visit(sql_expr[0], data_sources, env, index)
         return (visit(sub_expr, data_sources, env, index) for sub_expr in sql_expr)
 
 

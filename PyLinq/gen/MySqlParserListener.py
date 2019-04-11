@@ -1,4 +1,4 @@
-# Generated from /Users/zhangzhiqiang/PycharmProjects/test/PyLinq/MySqlParser.g4 by ANTLR 4.7.2
+# Generated from /Users/zhangzhiqiang/PycharmProjects/PyLinq/PyLinq/parser/MySqlParser.g4 by ANTLR 4.7.2
 from antlr4 import *
 if __name__ is not None and "." in __name__:
     from .MySqlParser import MySqlParser
@@ -437,6 +437,15 @@ class MySqlParserListener(ParseTreeListener):
 
     # Exit a parse tree produced by MySqlParser#subqueryExpressionAtom.
     def exitSubqueryExpressionAtom(self, ctx:MySqlParser.SubqueryExpressionAtomContext):
+        pass
+
+
+    # Enter a parse tree produced by MySqlParser#priorityMathExpressionAtom.
+    def enterPriorityMathExpressionAtom(self, ctx:MySqlParser.PriorityMathExpressionAtomContext):
+        pass
+
+    # Exit a parse tree produced by MySqlParser#priorityMathExpressionAtom.
+    def exitPriorityMathExpressionAtom(self, ctx:MySqlParser.PriorityMathExpressionAtomContext):
         pass
 
 

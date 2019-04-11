@@ -450,7 +450,7 @@ class MySqlVisitor(MySqlParserVisitor):
             else:
                 return VAR(CONST(name), CONST(attr[1:]), None)
         else:
-            return VAR(name, None, None)
+            return VAR(CONST(name), None, None)
 
     def visitCaseFunctionCall(self, ctx: MySqlParser.CaseFunctionCallContext) -> SQLToken:
         """
@@ -520,11 +520,19 @@ class MySqlVisitor(MySqlParserVisitor):
         """
         '*' | '/' | '%' | DIV | MOD | '+' | '-' | '--'
         """
-        if ctx.DIV():
-            return 'div'
-        if ctx.MOD():
-            return 'mod'
+        # if ctx.DIV():
+        #     return 'div'
+        # if ctx.MOD():
+        #     return 'mod'
         return ctx.children[0].getText()
+
+    def visitPriorityMathExpressionAtom(self, ctx: MySqlParser.PriorityMathExpressionAtomContext) -> SQLToken:
+        """
+        left=expressionAtom op=('*'|'/'|'%'| DIV | MOD) right=expressionAtom
+        """
+        left = self.visit(ctx.expressionAtom(0))
+        right = self.visit(ctx.expressionAtom(1))
+        return SQLToken(FUNC, (ctx.op.text.lower(), left, right))
 
     def visitLogicalOperator(self, ctx: MySqlParser.LogicalOperatorContext) -> str:
         """
