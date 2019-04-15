@@ -79,6 +79,11 @@ class MySqlParserVisitor(ParseTreeVisitor):
         return self.visitChildren(ctx)
 
 
+    # Visit a parse tree produced by MySqlParser#indexByClause.
+    def visitIndexByClause(self, ctx:MySqlParser.IndexByClauseContext):
+        return self.visitChildren(ctx)
+
+
     # Visit a parse tree produced by MySqlParser#selectElements.
     def visitSelectElements(self, ctx:MySqlParser.SelectElementsContext):
         return self.visitChildren(ctx)

@@ -130,6 +130,61 @@ class SQLRuleTest(unittest.TestCase):
         other_val = sorted(other_val, key=lambda x: x[sort_key])
         self.assertListEqual(one_val, other_val)
 
+    def test_index_sql(self):
+        sql = ('(SELECT company.name, mobile.name AS mobile_name, ceo.name AS ceo_name '
+               'FROM company, mobile, ceo '
+               'INDEX BY company.id = mobile.company_id = ceo.company_id)')
+        data_source = run(sql, self.data_sources)
+        self.assertListEqual(data_source, [{'name': 'apple', 'mobile_name': 'iphone4', 'ceo_name': 'Tim Cook'},
+                                           {'name': 'apple', 'mobile_name': 'iphone5', 'ceo_name': 'Tim Cook'},
+                                           {'name': 'huawei', 'mobile_name': 'Mate20', 'ceo_name': 'renzhengfei'},
+                                           {'name': 'xiaomi', 'mobile_name': 'xiaomi2', 'ceo_name': 'leijun'},
+                                           {'name': 'xiaomi', 'mobile_name': 'xiaomi3', 'ceo_name': 'leijun'},
+                                           {'name': 'xiaomi', 'mobile_name': 'Mix2', 'ceo_name': 'leijun'},
+                                           {'name': 'xiaomi', 'mobile_name': 'Mix2S', 'ceo_name': 'leijun'}])
+
+    def test_index_sql2(self):
+        sql = ('(SELECT company.name, mobile.name AS mobile_name, ceo.name AS ceo_name '
+               'FROM company, mobile, ceo '
+               'WHERE company.name = "apple" '
+               'INDEX BY company.id = mobile.company_id = ceo.company_id)')
+        data_source = run(sql, self.data_sources)
+        self.assertListEqual(data_source, [{'name': 'apple', 'mobile_name': 'iphone4', 'ceo_name': 'Tim Cook'},
+                                           {'name': 'apple', 'mobile_name': 'iphone5', 'ceo_name': 'Tim Cook'}])
+
+    def test_index_sql3(self):
+        sql = ('(SELECT company.name, mobile.name AS mobile_name, ceo.name AS ceo_name '
+               'FROM company, mobile, ceo '
+               'WHERE company.name = "xiaomi" '
+               'ORDER BY mobile.id DESC '
+               'INDEX BY company.id = mobile.company_id = ceo.company_id)')
+        data_source = run(sql, self.data_sources)
+        self.assertListEqual(data_source, [{'name': 'xiaomi', 'mobile_name': 'Mix2', 'ceo_name': 'leijun'},
+                                           {'name': 'xiaomi', 'mobile_name': 'Mix2S', 'ceo_name': 'leijun'},
+                                           {'name': 'xiaomi', 'mobile_name': 'xiaomi3', 'ceo_name': 'leijun'},
+                                           {'name': 'xiaomi', 'mobile_name': 'xiaomi2', 'ceo_name': 'leijun'}])
+
+    def test_index_sql4(self):
+        sql = ('(SELECT company.name '
+               'FROM company, mobile, ceo '
+               'GROUP BY company.name '
+               'INDEX BY company.id = mobile.company_id = ceo.company_id)')
+        data_source = run(sql, self.data_sources)
+        self.assertListEqual(data_source, [{'name': 'apple'},
+                                           {'name': 'huawei'},
+                                           {'name': 'xiaomi'}])
+
+    def test_index_sql5(self):
+        sql = ('(SELECT company.name '
+               'FROM company, mobile, ceo '
+               'GROUP BY company.name '
+               'HAVING len(company.name) = 6 '
+               'ORDER BY company.name DESC '
+               'INDEX BY company.id = mobile.company_id = ceo.company_id)')
+        data_source = run(sql, self.data_sources)
+        self.assertListEqual(data_source, [{'name': 'xiaomi'},
+                                           {'name': 'huawei'}])
+
     def test_cale_sql(self):
         sql = ('(SELECT company.id+2*3 AS id '
                'FROM company '

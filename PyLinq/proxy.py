@@ -11,6 +11,7 @@ class FuncProxy:
     sql_funcs = {
         'first': lambda: lambda x: x[0],
         'not': lambda: lambda x: not x,
+        'len': lambda: lambda x: len(x),
         'signal_not': lambda: lambda x: not x,
         'signal_!': lambda: lambda x: not x,
         'signal_+': lambda: lambda x: x,

@@ -8,6 +8,61 @@ agg_funcs = dict()
 agg_position = set()
 
 
+def visit_index(expr, data_sources):
+    index_dict = {}
+    make_index_dict(expr.index_expr, data_sources, index_dict)
+    name, index_looped = index_dict.popitem()
+    for index_key, instances in index_looped.items():
+        for instance in get_index_instance(index_key, index_dict.copy(), {}):
+            for front_instance in instances:
+                instance[name] = front_instance
+                yield instance
+
+
+def get_index_instance(index_key, index_dict, instance_dict):
+    table_name, index = index_dict.popitem()
+    for instance in index.get(index_key, []):
+        instance_dict[table_name] = instance
+        if not index_dict:
+            yield instance_dict.copy()
+        else:
+            for new_instance_dict in get_index_instance(index_key, index_dict.copy(), instance_dict):
+                yield new_instance_dict
+        del instance_dict[table_name]
+
+
+def make_index_dict(index_expr, data_sources, index_dict):
+    """
+    :param index_expr: 索引表达式
+    :param data_sources: {
+        'student': [
+                     {'name': 'jay_chou', 'age': 40},
+                     {'name': 'zhang_xx', 'age': 30}
+                   ],
+        'teacher': [
+                     {'name': 'xxx', 'year': 4},
+                     {'name': 'yyy', 'year': 5}
+                   ]
+    }
+    :param index_dict: 索引字典
+    :return:
+    """
+    if isinstance(index_expr, SQLToken):
+        if index_expr.tag == FUNC and index_expr.args[0] == '=':
+            make_index_dict(index_expr.args[1], data_sources, index_dict)
+            make_index_dict(index_expr.args[2], data_sources, index_dict)
+        else:
+            raise SyntaxError('不支持该索引语法')
+    elif isinstance(index_expr, VAR):
+        name = visit(index_expr.name, data_sources, None, None)
+        instances = data_sources.pop(name)
+        attr = visit(index_expr.attr, data_sources, None, None)
+        temp_dict = {}
+        for instance in instances:
+            temp_dict.setdefault(instance[attr], []).append(instance)
+        index_dict[name] = temp_dict
+
+
 def visit_select(select_expr: tuple, instance_dict, env) -> dict:
     """
     :param instance_dict:

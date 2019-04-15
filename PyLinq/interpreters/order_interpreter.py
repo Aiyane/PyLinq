@@ -11,7 +11,7 @@ def run(expr: EXPR, data_sources: dict, env: dict) -> list:
     init_aggfuncs(expr.select_expr)
     # 排序规则
     env['order'] = tuple(get_desc_or_var(sub_expr) for sub_expr in expr.order_expr)
-    res = main_loop(expr, data_sources, {}, [], env)
+    res = index_loop(expr, data_sources, env, []) if expr.index_expr else main_loop(expr, data_sources, {}, [], env)
 
     # 如果有聚合函数
     if agg_position:
@@ -62,9 +62,18 @@ def condition_filter(expr: EXPR, instance_dict, res: list, env):
     :param res: 结果列表
     :return: 结果列表
     """
-    if (not expr.where_expr) or expr.where_expr and visit(expr.where_expr, instance_dict, env):
+    if (not expr.where_expr) or visit(expr.where_expr, instance_dict, env):
         index = bisect_left(res, instance_dict, env.get('order'))
         res.insert(index, instance_dict.copy())
+
+
+def index_loop(expr, data_sources, env, res):
+    for instance_dict in visit_index(expr, data_sources):
+        if data_sources:
+            main_loop(expr, data_sources.copy(), instance_dict, res, env)
+        else:
+            condition_filter(expr, instance_dict, res, env)
+    return res
 
 
 def main_loop(expr: EXPR, data_sources: dict, instance_dict, res: list, env) -> list:

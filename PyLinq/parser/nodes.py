@@ -10,7 +10,7 @@ SelectStatement = namedtuple('Root', ('id', 'tree'))
 SQLToken = namedtuple('Token', ('tag', 'args'))
 # 子语句
 FROM = namedtuple('from_expr', ('tables', 'condition', 'group', 'having'))
-SELECT = namedtuple('select', ('from_expr', 'order', 'limit', 'select'))
+SELECT = namedtuple('select', ('from_expr', 'order', 'limit', 'select', 'index'))
 VAR = namedtuple('var', ('name', 'attr', 'func'))
 CONST = namedtuple('const', ('value',))
 UNKNOWN = namedtuple('unknown', ())
@@ -36,5 +36,6 @@ EXPR = namedtuple('sql_interpreter', (
     'having_expr',
     'order_expr',
     'limit_expr',
-    'select_expr'
+    'select_expr',
+    'index_expr'
 ))

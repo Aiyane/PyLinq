@@ -9,7 +9,7 @@ def run(expr: EXPR, data_sources: dict, env: dict) -> list:
     data_sources = visit(expr.from_expr, data_sources, env)
     # 通过 select 语句先确定有哪些聚合函数，每一列的都需要新生成一个函数
     init_aggfuncs(expr.select_expr)
-    res = main_loop(expr, data_sources, {}, [], env)
+    res = index_loop(expr, data_sources, env, []) if expr.index_expr else main_loop(expr, data_sources, {}, [], env)
 
     # 如果有聚合函数
     if agg_position:
@@ -27,6 +27,15 @@ def run(expr: EXPR, data_sources: dict, env: dict) -> list:
     return res
 
 
+def index_loop(expr, data_sources, env, res):
+    for instance_dict in visit_index(expr, data_sources):
+        if data_sources:
+            main_loop(expr, data_sources.copy(), instance_dict, res, env)
+        else:
+            condition_filter(expr, instance_dict, res, env)
+    return res
+
+
 def condition_filter(expr: EXPR, instance_dict, res: list, env):
     """
     :param env:
@@ -38,7 +47,7 @@ def condition_filter(expr: EXPR, instance_dict, res: list, env):
     :param res: 结果列表
     :return: 结果列表
     """
-    if (not expr.where_expr) or expr.where_expr and visit(expr.where_expr, instance_dict, env):
+    if (not expr.where_expr) or visit(expr.where_expr, instance_dict, env):
         res.append(visit_select(expr.select_expr, instance_dict, env))
 
 

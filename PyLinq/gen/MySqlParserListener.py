@@ -134,6 +134,15 @@ class MySqlParserListener(ParseTreeListener):
         pass
 
 
+    # Enter a parse tree produced by MySqlParser#indexByClause.
+    def enterIndexByClause(self, ctx:MySqlParser.IndexByClauseContext):
+        pass
+
+    # Exit a parse tree produced by MySqlParser#indexByClause.
+    def exitIndexByClause(self, ctx:MySqlParser.IndexByClauseContext):
+        pass
+
+
     # Enter a parse tree produced by MySqlParser#selectElements.
     def enterSelectElements(self, ctx:MySqlParser.SelectElementsContext):
         pass

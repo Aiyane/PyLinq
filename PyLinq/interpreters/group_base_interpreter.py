@@ -14,9 +14,14 @@ def visit_group(expr, data_sources, env):
     groups = get_groups(expr.group_expr)
     env['groups'] = groups
     res_dict = {}
-    for instance_dict in main_loop(data_sources, {}, expr.where_expr, env):
-        pk = tuple(instance_dict[table_name][attr] for table_name, attr in groups)
-        res_dict.setdefault(pk, []).append(instance_dict)
+    if expr.index_expr:
+        for instance_dict in index_loop(expr, data_sources, env):
+            pk = tuple(instance_dict[table_name][attr] for table_name, attr in groups)
+            res_dict.setdefault(pk, []).append(instance_dict)
+    else:
+        for instance_dict in main_loop(data_sources, {}, expr.where_expr, env):
+            pk = tuple(instance_dict[table_name][attr] for table_name, attr in groups)
+            res_dict.setdefault(pk, []).append(instance_dict)
     return res_dict
 
 
@@ -36,6 +41,16 @@ def main_loop(data_sources: dict, instance_dict, where_expr, env):
                 yield res
         # 处理完将本条记录删除
         del instance_dict[name]
+
+
+def index_loop(expr, data_sources, env):
+    for instance_dict in visit_index(expr, data_sources):
+        if data_sources:
+            for new_instance_dict in main_loop(data_sources.copy(), instance_dict, expr.where_expr, env):
+                yield new_instance_dict
+        else:
+            if not expr.where_expr or visit(expr.where_expr, instance_dict, env):
+                yield deepcopy(instance_dict)
 
 
 def group_visit_select(select_expr: tuple, instance_dict, env) -> dict:

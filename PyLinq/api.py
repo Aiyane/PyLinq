@@ -65,7 +65,8 @@ def sql_interpreter(tree, data_sources: dict, env: dict) -> list:
             front_part.having,
             tree.order,
             tree.limit,
-            tree.select
+            tree.select,
+            tree.index
         ),
         data_sources, env
     )

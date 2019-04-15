@@ -59,7 +59,12 @@ queryExpression
 // 9
 querySpecification
     : SELECT DISTINCT? selectElements
-      fromClause? orderByClause? limitClause?
+      fromClause? orderByClause? limitClause? indexByClause?
+    ;
+
+// 10
+indexByClause
+    : INDEX BY expression
     ;
 
 // 12
