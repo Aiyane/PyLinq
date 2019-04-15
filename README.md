@@ -31,6 +31,41 @@ python 3.5 及以上
 
 pip 安装 antlr4-python3-runtime
 
-### 使用
+### 使用示例
 
-请看 `example.py` 与 `test_linq.py` 文件的实例。
+请看 `example.py` 与 `test_linq.py` 文件的示例。
+
+### 使用索引
+
+在 join 多张表时，相当于做多重循环。如果 join 的表数量很多，耗时会过大。如果对表的某个字段建立索引，则只进行一次循环。
+
+新增语法 `INDEX BY`，在该语法后可用连等号表示建立的索引。以下为例子：
+```python
+sql = ('(SELECT company.name, mobile.name AS mobile_name, ceo.name AS ceo_name '
+       'FROM company, mobile, ceo '
+       'INDEX BY company.id = mobile.company_id = ceo.company_id)')
+sql = ('(SELECT company.name, mobile.name AS mobile_name, ceo.name AS ceo_name '
+       'FROM company, mobile, ceo '
+       'WHERE company.name = "apple" '
+       'INDEX BY company.id = mobile.company_id = ceo.company_id)')
+sql = ('(SELECT company.name, mobile.name AS mobile_name, ceo.name AS ceo_name '
+       'FROM company, mobile, ceo '
+       'WHERE company.name = "xiaomi" '
+       'ORDER BY mobile.id DESC '
+       'INDEX BY company.id = mobile.company_id = ceo.company_id)')
+sql = ('(SELECT company.name '
+       'FROM company, mobile, ceo '
+       'GROUP BY company.name '
+       'INDEX BY company.id = mobile.company_id = ceo.company_id)')
+sql = ('(SELECT company.name '
+       'FROM company, mobile, ceo '
+       'GROUP BY company.name '
+       'HAVING len(company.name) = 6 '
+       'ORDER BY company.name DESC '
+       'INDEX BY company.id = mobile.company_id = ceo.company_id)')
+sql = ('(SELECT company.name, mobile.name AS mobile_name, ceo.name AS ceo_name, mobile_price.price '
+       'FROM company, mobile, ceo, mobile_price '
+       'WHERE mobile_price.mobile_id = mobile.id '
+       'ORDER BY mobile_price.price '
+       'INDEX BY company.id = mobile.company_id = ceo.company_id)')
+```
