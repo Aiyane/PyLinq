@@ -64,7 +64,7 @@ querySpecification
 
 // 10
 indexByClause
-    : INDEX BY expression
+    : JOIN WITH expression
     ;
 
 // 12

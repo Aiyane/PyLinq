@@ -17,7 +17,7 @@ AND:                                 'AND';
 AS:                                  'AS';
 ASC:                                 'ASC';
 BETWEEN:                             'BETWEEN';
-INDEX:                               'INDEX';
+WITH:                                'WITH';
 BY:                                  'BY';
 CASE:                                'CASE';
 CROSS:                               'CROSS';

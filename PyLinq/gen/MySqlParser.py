@@ -1,4 +1,4 @@
-# Generated from /Users/zhangzhiqiang/PycharmProjects/PyLinq/PyLinq/parser/MySqlParser.g4 by ANTLR 4.7.2
+# Generated from /Users/zhangzhiqiang/PycharmProjects/test/PyLinq/parser/MySqlParser.g4 by ANTLR 4.7.2
 # encoding: utf-8
 from antlr4 import *
 from io import StringIO
@@ -114,7 +114,7 @@ def serializedATN():
         buf.write("\u00b9\5\36\20\2\u00b8\u00b7\3\2\2\2\u00b8\u00b9\3\2\2")
         buf.write("\2\u00b9\u00bb\3\2\2\2\u00ba\u00bc\5\24\13\2\u00bb\u00ba")
         buf.write("\3\2\2\2\u00bb\u00bc\3\2\2\2\u00bc\23\3\2\2\2\u00bd\u00be")
-        buf.write("\7\f\2\2\u00be\u00bf\7\r\2\2\u00bf\u00c0\58\35\2\u00c0")
+        buf.write("\7\34\2\2\u00be\u00bf\7\f\2\2\u00bf\u00c0\58\35\2\u00c0")
         buf.write("\25\3\2\2\2\u00c1\u00c4\7\66\2\2\u00c2\u00c4\5\30\r\2")
         buf.write("\u00c3\u00c1\3\2\2\2\u00c3\u00c2\3\2\2\2\u00c4\u00c9\3")
         buf.write("\2\2\2\u00c5\u00c6\7I\2\2\u00c6\u00c8\5\30\r\2\u00c7\u00c5")
@@ -278,7 +278,7 @@ class MySqlParser ( Parser ):
 
     literalNames = [ "<INVALID>", "<INVALID>", "<INVALID>", "<INVALID>", 
                      "<INVALID>", "'ALL'", "'AND'", "'AS'", "'ASC'", "'BETWEEN'", 
-                     "'INDEX'", "'BY'", "'CASE'", "'CROSS'", "'DESC'", "'DISTINCT'", 
+                     "'WITH'", "'BY'", "'CASE'", "'CROSS'", "'DESC'", "'DISTINCT'", 
                      "'ELSE'", "'EXISTS'", "'FALSE'", "'FROM'", "'GROUP'", 
                      "'HAVING'", "'IN'", "'INNER'", "'INTO'", "'IS'", "'JOIN'", 
                      "'LEFT'", "'LIKE'", "'LIMIT'", "'NOT'", "'NULL'", "'ON'", 
@@ -292,7 +292,7 @@ class MySqlParser ( Parser ):
 
     symbolicNames = [ "<INVALID>", "SPACE", "SPEC_MYSQL_COMMENT", "COMMENT_INPUT", 
                       "LINE_COMMENT", "ALL", "AND", "AS", "ASC", "BETWEEN", 
-                      "INDEX", "BY", "CASE", "CROSS", "DESC", "DISTINCT", 
+                      "WITH", "BY", "CASE", "CROSS", "DESC", "DISTINCT", 
                       "ELSE", "EXISTS", "FALSE", "FROM", "GROUP", "HAVING", 
                       "IN", "INNER", "INTO", "IS", "JOIN", "LEFT", "LIKE", 
                       "LIMIT", "NOT", "NULL_LITERAL", "ON", "OR", "ORDER", 
@@ -362,7 +362,7 @@ class MySqlParser ( Parser ):
     AS=7
     ASC=8
     BETWEEN=9
-    INDEX=10
+    WITH=10
     BY=11
     CASE=12
     CROSS=13
@@ -787,13 +787,14 @@ class MySqlParser ( Parser ):
                 self.tableSourceItem()
                 self.state = 90
                 self._errHandler.sync(self)
-                _la = self._input.LA(1)
-                while (((_la) & ~0x3f) == 0 and ((1 << _la) & ((1 << MySqlParser.CROSS) | (1 << MySqlParser.INNER) | (1 << MySqlParser.JOIN) | (1 << MySqlParser.LEFT) | (1 << MySqlParser.RIGHT))) != 0):
-                    self.state = 87
-                    self.joinPart()
+                _alt = self._interp.adaptivePredict(self._input,3,self._ctx)
+                while _alt!=2 and _alt!=ATN.INVALID_ALT_NUMBER:
+                    if _alt==1:
+                        self.state = 87
+                        self.joinPart() 
                     self.state = 92
                     self._errHandler.sync(self)
-                    _la = self._input.LA(1)
+                    _alt = self._interp.adaptivePredict(self._input,3,self._ctx)
 
                 pass
 
@@ -1452,7 +1453,7 @@ class MySqlParser ( Parser ):
             self.state = 185
             self._errHandler.sync(self)
             _la = self._input.LA(1)
-            if _la==MySqlParser.INDEX:
+            if _la==MySqlParser.JOIN:
                 self.state = 184
                 self.indexByClause()
 
@@ -1472,11 +1473,11 @@ class MySqlParser ( Parser ):
             super().__init__(parent, invokingState)
             self.parser = parser
 
-        def INDEX(self):
-            return self.getToken(MySqlParser.INDEX, 0)
+        def JOIN(self):
+            return self.getToken(MySqlParser.JOIN, 0)
 
-        def BY(self):
-            return self.getToken(MySqlParser.BY, 0)
+        def WITH(self):
+            return self.getToken(MySqlParser.WITH, 0)
 
         def expression(self):
             return self.getTypedRuleContext(MySqlParser.ExpressionContext,0)
@@ -1509,9 +1510,9 @@ class MySqlParser ( Parser ):
         try:
             self.enterOuterAlt(localctx, 1)
             self.state = 187
-            self.match(MySqlParser.INDEX)
+            self.match(MySqlParser.JOIN)
             self.state = 188
-            self.match(MySqlParser.BY)
+            self.match(MySqlParser.WITH)
             self.state = 189
             self.expression(0)
         except RecognitionException as re:

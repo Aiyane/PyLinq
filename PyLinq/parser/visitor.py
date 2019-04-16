@@ -540,6 +540,6 @@ class MySqlVisitor(MySqlParserVisitor):
 
     def visitIndexByClause(self, ctx: MySqlParser.IndexByClauseContext) -> SQLToken:
         """
-        INDEX BY expression
+        JOIN WITH expression
         """
         return self.visit(ctx.expression())
