@@ -1,4 +1,3 @@
-from copy import deepcopy
 from .common_interpreter import *
 
 
@@ -25,32 +24,42 @@ def visit_group(expr, data_sources, env):
     return res_dict
 
 
-def main_loop(data_sources: dict, instance_dict, where_expr, env):
-    name, instances = data_sources.popitem()
-    for instance in instances:
-        instance_dict[name] = instance
-        # 如果是最后一张表,处理一行,否则取出下一张表
-        if not data_sources:
-            if where_expr:
-                if visit(where_expr, instance_dict, env):
-                    yield deepcopy(instance_dict)
-            else:
-                yield deepcopy(instance_dict)
-        else:
-            for res in main_loop(data_sources.copy(), instance_dict, where_expr, env):
-                yield res
-        # 处理完将本条记录删除
-        del instance_dict[name]
+def main_loop(data_sources: dict, instance_dict, where_expr, env) -> list:
+    for new_instance_dict in _main_loop(set(), data_sources, instance_dict, 0, len(data_sources)):
+        if not where_expr or visit(where_expr, new_instance_dict, env):
+            yield new_instance_dict
+
+
+def _main_loop(used_keys, data_sources, instance_dict, num, data_num):
+    """
+    :param used_keys: 表名集合
+    :param data_sources: 表数据
+    :param instance_dict: 一条记录
+    :param num: 已取表数目
+    :param data_num: 表数目
+    """
+    if num == data_num:
+        yield instance_dict.copy()
+    else:
+        # 只取一个
+        table_name, instances = next(filter(lambda x: x[0] not in used_keys, data_sources.items()))
+        used_keys.add(table_name)
+        for instance in instances:
+            instance_dict[table_name] = instance
+            for new_instance_dict in _main_loop(used_keys, data_sources, instance_dict, num + 1, data_num):
+                yield new_instance_dict
+            del instance_dict[table_name]
+        used_keys.remove(table_name)
 
 
 def index_loop(expr, data_sources, env):
     for instance_dict in visit_index(expr, data_sources):
         if data_sources:
-            for new_instance_dict in main_loop(data_sources.copy(), instance_dict, expr.where_expr, env):
+            for new_instance_dict in main_loop(data_sources, instance_dict, expr.where_expr, env):
                 yield new_instance_dict
         else:
             if not expr.where_expr or visit(expr.where_expr, instance_dict, env):
-                yield deepcopy(instance_dict)
+                yield instance_dict
 
 
 def group_visit_select(select_expr: tuple, instance_dict, env) -> dict:

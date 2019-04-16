@@ -12,23 +12,27 @@ def visit_index(expr, data_sources):
     index_dict = {}
     make_index_dict(expr.index_expr, data_sources, index_dict)
     name, index_looped = index_dict.popitem()
+    index_len = len(index_dict)
     for index_key, instances in index_looped.items():
-        for instance in get_index_instance(index_key, index_dict.copy(), {}):
+        for instance in get_index_instance(index_key, set(), index_dict, {}, 0, index_len):
             for front_instance in instances:
                 instance[name] = front_instance
                 yield instance
 
 
-def get_index_instance(index_key, index_dict, instance_dict):
-    table_name, index = index_dict.popitem()
-    for instance in index.get(index_key, []):
-        instance_dict[table_name] = instance
-        if not index_dict:
-            yield instance_dict.copy()
-        else:
-            for new_instance_dict in get_index_instance(index_key, index_dict.copy(), instance_dict):
+def get_index_instance(index_key, used_keys, index_dict, instance_dict, num, index_num):
+    if num == index_num:
+        yield instance_dict.copy()
+    else:
+        # 只取一个
+        table_name, index = next(filter(lambda x: x[0] not in used_keys, index_dict.items()))
+        used_keys.add(table_name)
+        for instance in index.get(index_key, []):
+            instance_dict[table_name] = instance
+            for new_instance_dict in get_index_instance(index_key, used_keys, index_dict, instance_dict, num + 1, index_num):
                 yield new_instance_dict
-        del instance_dict[table_name]
+            del instance_dict[table_name]
+        used_keys.remove(table_name)
 
 
 def make_index_dict(index_expr, data_sources, index_dict):

@@ -64,51 +64,44 @@ def condition_filter(expr: EXPR, instance_dict, res: list, env):
     """
     if (not expr.where_expr) or visit(expr.where_expr, instance_dict, env):
         index = bisect_left(res, instance_dict, env.get('order'))
-        res.insert(index, instance_dict.copy())
+        res.insert(index, instance_dict)
 
 
 def index_loop(expr, data_sources, env, res):
     for instance_dict in visit_index(expr, data_sources):
         if data_sources:
-            main_loop(expr, data_sources.copy(), instance_dict, res, env)
+            main_loop(expr, data_sources, instance_dict, res, env)
         else:
             condition_filter(expr, instance_dict, res, env)
     return res
 
 
 def main_loop(expr: EXPR, data_sources: dict, instance_dict, res: list, env) -> list:
-    """
-    :param env:
-    :param expr:
-    :param data_sources: {
-        'student': [
-                     {'name': 'jay_chou', 'age': 40},
-                     {'name': 'zhang_xx', 'age': 30}
-                   ],
-        'teacher': [
-                     {'name': 'xxx', 'year': 4},
-                     {'name': 'yyy', 'year': 5}
-                   ]
-    } 这样的表数据
-    :param instance_dict: {
-        'student': {'name': 'jay_chou', 'age': 40},
-        'teacher': {'name': 'zzzz', 'year': 5}
-    } 这样的数据, 每一张表只取一行, 凑成的一条数据
-    :param res:
-    :return:
-    """
-    # 取出一张表
-    name, instances = data_sources.popitem()
-    for instance in instances:
-        instance_dict[name] = instance
-        # 如果是最后一张表,处理一行,否则取出下一张表
-        if not data_sources:
-            condition_filter(expr, instance_dict, res, env)
-        else:
-            main_loop(expr, data_sources.copy(), instance_dict, res, env)
-        # 处理完将本条记录删除
-        del instance_dict[name]
+    for new_instance_dict in _main_loop(set(), data_sources, instance_dict, 0, len(data_sources)):
+        condition_filter(expr, new_instance_dict, res, env)
     return res
+
+
+def _main_loop(used_keys, data_sources, instance_dict, num, data_num):
+    """
+    :param used_keys: 表名集合
+    :param data_sources: 表数据
+    :param instance_dict: 一条记录
+    :param num: 已取表数目
+    :param data_num: 表数目
+    """
+    if num == data_num:
+        yield instance_dict.copy()
+    else:
+        # 只取一个
+        table_name, instances = next(filter(lambda x: x[0] not in used_keys, data_sources.items()))
+        used_keys.add(table_name)
+        for instance in instances:
+            instance_dict[table_name] = instance
+            for new_instance_dict in _main_loop(used_keys, data_sources, instance_dict, num + 1, data_num):
+                yield new_instance_dict
+            del instance_dict[table_name]
+        used_keys.remove(table_name)
 
 
 def bisect_left(a, x, orders, lo=0, hi=None):

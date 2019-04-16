@@ -51,7 +51,7 @@ def get_desc_or_var(expr):
 def condition_filter(expr: EXPR, instance_dict, res: list, env):
     if (not expr.having_expr) or expr.having_expr and group_visit(expr.having_expr, instance_dict, env):
         index = bisect_left(res, instance_dict, env.get('order'))
-        res.insert(index, instance_dict.copy())
+        res.insert(index, instance_dict)
 
 
 def bisect_left(a, x, orders, lo=0, hi=None):
