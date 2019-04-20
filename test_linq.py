@@ -132,9 +132,49 @@ class SQLRuleTest(unittest.TestCase):
 
     def test_index_sql(self):
         sql = ('(SELECT company.name, mobile.name AS mobile_name, ceo.name AS ceo_name '
-               'FROM company, mobile, ceo '
-               'JOIN WITH company.id = mobile.company_id = ceo.company_id)')
+               'FROM company JOIN mobile ON company.id = mobile.company_id JOIN ceo ON company.id = ceo.company_id)')
         data_source = run(sql, self.data_sources)
+        """
+        select(from_expr=from_expr(tables=Token(
+            tag='tables',
+                args=[
+                    var(name=const(value='company'), attr=None, func=None),
+                    Token(
+                        tag='inner', 
+                        args=(
+                            var(name=const(value='mobile'), attr=None, func=None),
+                            Token(
+                                tag='func', 
+                                args=(
+                                    '=', 
+                                    var(name=const(value='company'), attr=const(value='id'), func=None),
+                                    var(name=const(value='mobile'), attr=const(value='company_id'), func=None)
+                                )
+                            )
+                        )
+                    ), 
+                    Token(
+                        tag='inner', 
+                        args=(
+                            var(name=const(value='ceo'), attr=None, func=None),
+                            Token(
+                                tag='func',
+                                args=(
+                                    '=',
+                                    var(name=const(value='company'), attr=const(value='id'), func=None),
+                                    var(name=const(value='ceo'), attr=const(value='company_id'), func=None)
+                                )
+                            )
+                        )
+                    )
+                ]
+            ),
+            condition=None, group=None, having=None), order=None, limit=None, select=(
+        False, False, var(name=const(value='company'), attr=const(value='name'), func=None), Token(tag='as', args=(
+        var(name=const(value='mobile'), attr=const(value='name'), func=None), const(value='mobile_name'))),
+        Token(tag='as',
+              args=(var(name=const(value='ceo'), attr=const(value='name'), func=None), const(value='ceo_name')))))
+        """
         self.assertListEqual(data_source, [{'name': 'apple', 'mobile_name': 'iphone4', 'ceo_name': 'Tim Cook'},
                                            {'name': 'apple', 'mobile_name': 'iphone5', 'ceo_name': 'Tim Cook'},
                                            {'name': 'huawei', 'mobile_name': 'Mate20', 'ceo_name': 'renzhengfei'},
@@ -145,19 +185,17 @@ class SQLRuleTest(unittest.TestCase):
 
     def test_index_sql2(self):
         sql = ('(SELECT company.name, mobile.name AS mobile_name, ceo.name AS ceo_name '
-               'FROM company, mobile, ceo '
-               'WHERE company.name = "apple" '
-               'JOIN WITH company.id = mobile.company_id = ceo.company_id)')
+               'FROM company JOIN mobile ON company.id = mobile.company_id JOIN ceo ON company.id = ceo.company_id '
+               'WHERE company.name = "apple")')
         data_source = run(sql, self.data_sources)
         self.assertListEqual(data_source, [{'name': 'apple', 'mobile_name': 'iphone4', 'ceo_name': 'Tim Cook'},
                                            {'name': 'apple', 'mobile_name': 'iphone5', 'ceo_name': 'Tim Cook'}])
 
     def test_index_sql3(self):
         sql = ('(SELECT company.name, mobile.name AS mobile_name, ceo.name AS ceo_name '
-               'FROM company, mobile, ceo '
+               'FROM company JOIN mobile ON company.id = mobile.company_id JOIN ceo ON company.id = ceo.company_id '
                'WHERE company.name = "xiaomi" '
-               'ORDER BY mobile.id DESC '
-               'JOIN WITH company.id = mobile.company_id = ceo.company_id)')
+               'ORDER BY mobile.id DESC)')
         data_source = run(sql, self.data_sources)
         self.assertListEqual(data_source, [{'name': 'xiaomi', 'mobile_name': 'Mix2', 'ceo_name': 'leijun'},
                                            {'name': 'xiaomi', 'mobile_name': 'Mix2S', 'ceo_name': 'leijun'},
@@ -166,9 +204,8 @@ class SQLRuleTest(unittest.TestCase):
 
     def test_index_sql4(self):
         sql = ('(SELECT company.name '
-               'FROM company, mobile, ceo '
-               'GROUP BY company.name '
-               'JOIN WITH company.id = mobile.company_id = ceo.company_id)')
+               'FROM company JOIN mobile ON company.id = mobile.company_id JOIN ceo ON company.id = ceo.company_id '
+               'GROUP BY company.name)')
         data_source = run(sql, self.data_sources)
         self.assertListEqual(data_source, [{'name': 'apple'},
                                            {'name': 'huawei'},
@@ -176,21 +213,20 @@ class SQLRuleTest(unittest.TestCase):
 
     def test_index_sql5(self):
         sql = ('(SELECT company.name '
-               'FROM company, mobile, ceo '
+               'FROM company JOIN mobile ON company.id = mobile.company_id JOIN ceo ON company.id = ceo.company_id '
                'GROUP BY company.name '
                'HAVING len(company.name) = 6 '
-               'ORDER BY company.name DESC '
-               'JOIN WITH company.id = mobile.company_id = ceo.company_id)')
+               'ORDER BY company.name DESC)')
         data_source = run(sql, self.data_sources)
         self.assertListEqual(data_source, [{'name': 'xiaomi'},
                                            {'name': 'huawei'}])
 
     def test_index_sql6(self):
         sql = ('(SELECT company.name, mobile.name AS mobile_name, ceo.name AS ceo_name, mobile_price.price '
-               'FROM company, mobile, ceo, mobile_price '
+               'FROM company JOIN mobile JOIN ceo ON company.id = mobile.company_id '
+               'JOIN mobile_price ON company.id = ceo.company_id '
                'WHERE mobile_price.mobile_id = mobile.id '
-               'ORDER BY mobile_price.price '
-               'JOIN WITH company.id = mobile.company_id = ceo.company_id)')
+               'ORDER BY mobile_price.price)')
         data_source = run(sql, self.data_sources)
         self.assertListEqual(data_source, [{'name': 'xiaomi', 'mobile_name': 'xiaomi2', 'ceo_name': 'leijun', 'price': 1000},
                                            {'name': 'xiaomi', 'mobile_name': 'xiaomi3', 'ceo_name': 'leijun', 'price': 2000},
