@@ -1,4 +1,4 @@
-# Generated from /Users/zhangzhiqiang/PycharmProjects/test/PyLinq/parser/MySqlParser.g4 by ANTLR 4.7.2
+# Generated from /Users/zhangzhiqiang/PycharmProjects/PyLinq/PyLinq/parser/MySqlParser.g4 by ANTLR 4.7.2
 from antlr4 import *
 if __name__ is not None and "." in __name__:
     from .MySqlParser import MySqlParser
@@ -76,11 +76,6 @@ class MySqlParserVisitor(ParseTreeVisitor):
 
     # Visit a parse tree produced by MySqlParser#querySpecification.
     def visitQuerySpecification(self, ctx:MySqlParser.QuerySpecificationContext):
-        return self.visitChildren(ctx)
-
-
-    # Visit a parse tree produced by MySqlParser#indexByClause.
-    def visitIndexByClause(self, ctx:MySqlParser.IndexByClauseContext):
         return self.visitChildren(ctx)
 
 

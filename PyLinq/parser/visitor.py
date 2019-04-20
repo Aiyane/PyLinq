@@ -33,7 +33,7 @@ class MySqlVisitor(MySqlParserVisitor):
     def visitQuerySpecification(self, ctx: MySqlParser.QuerySpecificationContext) -> SQLToken:
         """ 每个 select 子句都需要入队
         SELECT DISTINCT? selectElements
-        fromClause? orderByClause? limitClause? indexByClause?
+        fromClause? orderByClause? limitClause?
         """
         distinct = True if ctx.DISTINCT() else False
         select_elements = self.visit(ctx.selectElements())
@@ -43,10 +43,10 @@ class MySqlVisitor(MySqlParserVisitor):
         order_by_clause = self.visit(order_by_clause) if order_by_clause else None
         limit_clause = ctx.limitClause()
         limit_clause = self.visit(limit_clause) if limit_clause else None
-        index_by_clause = ctx.indexByClause()
-        index_by_clause = self.visit(index_by_clause) if index_by_clause else None
+        # index_by_clause = ctx.indexByClause()
+        # index_by_clause = self.visit(index_by_clause) if index_by_clause else None
 
-        sql_token = SELECT(from_clause, order_by_clause, limit_clause, (distinct, *select_elements), index_by_clause)
+        sql_token = SELECT(from_clause, order_by_clause, limit_clause, (distinct, *select_elements))
         tree = SelectStatement(self.get_id(), sql_token)
         self.select_statements_queue.put(tree)
         return SQLToken(LINK, tree.id)
@@ -116,10 +116,9 @@ class MySqlVisitor(MySqlParserVisitor):
         table_source_items = [self.visit(ctx.tableSourceItem())]
         for join_part in ctx.joinPart():
             table_source_items.append(self.visit(join_part))
-        # return TABLES(table_source_items)
         return SQLToken(TABLES, table_source_items)
 
-    def visitFunctionArgs(self, ctx: MySqlParser.FunctionArgsContext) -> SQLToken:
+    def visitFunctionArgs(self, ctx: MySqlParser.FunctionArgsContext) -> tuple:
         """
         ('*' | ALL | constant | fullColumnName | functionCall | expression)
         (
@@ -144,13 +143,15 @@ class MySqlVisitor(MySqlParserVisitor):
         table_source_items = [self.visit(ctx.tableSourceItem())]
         for join_part in ctx.joinPart():
             table_source_items.append(self.visit(join_part))
-        # return TABLES(table_source_items)
         return SQLToken(TABLES, table_source_items)
 
     def visitInnerJoin(self, ctx: MySqlParser.InnerJoinContext) -> SQLToken:
         """
-        (INNER | CROSS)? JOIN tableSourceItem
+        (INNER | CROSS)? JOIN tableSourceItem (ON expression)?
         """
+        # TODO: on 语句
+        if ctx.ON():
+            return SQLToken(INNER, (self.visit(ctx.tableSourceItem()), self.visit(ctx.expression())))
         return SQLToken(INNER, self.visit(ctx.tableSourceItem()))
 
     def visitOuterJoin(self, ctx: MySqlParser.OuterJoinContext) -> SQLToken:
@@ -180,7 +181,7 @@ class MySqlVisitor(MySqlParserVisitor):
         alis = ctx.ID()
         return SQLToken(AS, (name, CONST(alis.getText()))) if alis else name
 
-    def visitFullId(self, ctx: MySqlParser.FullIdContext) -> SQLToken:
+    def visitFullId(self, ctx: MySqlParser.FullIdContext) -> VAR:
         """
         ID DOT_ID?
         """
@@ -537,9 +538,3 @@ class MySqlVisitor(MySqlParserVisitor):
         AND | OR
         """
         return 'and' if ctx.AND() else 'or'
-
-    def visitIndexByClause(self, ctx: MySqlParser.IndexByClauseContext) -> SQLToken:
-        """
-        JOIN WITH expression
-        """
-        return self.visit(ctx.expression())

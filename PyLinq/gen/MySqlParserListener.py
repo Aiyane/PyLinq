@@ -1,4 +1,4 @@
-# Generated from /Users/zhangzhiqiang/PycharmProjects/test/PyLinq/parser/MySqlParser.g4 by ANTLR 4.7.2
+# Generated from /Users/zhangzhiqiang/PycharmProjects/PyLinq/PyLinq/parser/MySqlParser.g4 by ANTLR 4.7.2
 from antlr4 import *
 if __name__ is not None and "." in __name__:
     from .MySqlParser import MySqlParser
@@ -131,15 +131,6 @@ class MySqlParserListener(ParseTreeListener):
 
     # Exit a parse tree produced by MySqlParser#querySpecification.
     def exitQuerySpecification(self, ctx:MySqlParser.QuerySpecificationContext):
-        pass
-
-
-    # Enter a parse tree produced by MySqlParser#indexByClause.
-    def enterIndexByClause(self, ctx:MySqlParser.IndexByClauseContext):
-        pass
-
-    # Exit a parse tree produced by MySqlParser#indexByClause.
-    def exitIndexByClause(self, ctx:MySqlParser.IndexByClauseContext):
         pass
 
 

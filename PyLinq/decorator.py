@@ -1,4 +1,5 @@
-from PyLinq.proxy import FuncProxy
+from functools import wraps
+from PyLinq.proxy import FuncProxy, QueueProxy
 
 
 def register_func(alias, is_aggr=False):
@@ -14,3 +15,19 @@ def register_func(alias, is_aggr=False):
         if is_aggr:
             FuncProxy.aggr.add(func_name)
     return _func
+
+
+def queue_cache(func):
+    """
+    保存 sql 表达式对应的 语法树队列
+    """
+    @wraps(func)
+    def __func(sql_expr: str):
+        queues = QueueProxy.get(sql_expr)
+        if queues:
+            return queues
+
+        queue = func(sql_expr)
+        QueueProxy.add(sql_expr, queue)
+        return queue
+    return __func

@@ -10,7 +10,7 @@ agg_position = set()
 
 def visit_index(expr, data_sources):
     index_dict = {}
-    make_index_dict(expr.index_expr, data_sources, index_dict)
+    make_index_dict(expr, data_sources, index_dict)
     name, index_looped = index_dict.popitem()
     index_len = len(index_dict)
     for index_key, instances in index_looped.items():
@@ -59,15 +59,19 @@ def make_index_dict(index_expr, data_sources, index_dict):
             raise SyntaxError('不支持该索引语法')
     elif isinstance(index_expr, VAR):
         name = visit(index_expr.name, data_sources, None, None)
-        instances = data_sources.pop(name)
-        attr = visit(index_expr.attr, data_sources, None, None)
-        temp_dict = {}
-        for instance in instances:
-            temp_dict.setdefault(instance[attr], []).append(instance)
-        index_dict[name] = temp_dict
+        if name in data_sources:
+            instances = data_sources.pop(name)
+            attr = visit(index_expr.attr, data_sources, None, None)
+            temp_dict = {}
+            for instance in instances:
+                temp_dict.setdefault(instance[attr], []).append(instance)
+            index_dict[name] = temp_dict
+    elif isinstance(index_expr, list):
+        for sub_expr in index_expr:
+            make_index_dict(sub_expr, data_sources, index_dict)
 
 
-def visit_select(select_expr: tuple, instance_dict, env) -> dict:
+def visit_select(select_expr: tuple, instance_dict, env):
     """
     :param instance_dict:
     :param env:
@@ -150,6 +154,30 @@ def visit_tables(tables_expr: SQLToken, data_sources: dict, env: dict, index) ->
     return dict(make_name(table_expr, visit(table_expr, data_sources, env, index)) for table_expr in tables_expr.args)
 
 
+def visit_inner(inner_expr: SQLToken, data_sources: dict, env: dict, index) -> tuple:
+    """
+    Token(
+        tag='inner',
+        args=(
+            var(name=const(value='mobile'), attr=None, func=None),
+            Token(
+                tag='func',
+                args=(
+                    '=',
+                    var(name=const(value='company'), attr=const(value='id'), func=None),
+                    var(name=const(value='mobile'), attr=const(value='company_id'), func=None)
+                )
+            )
+        )
+    )
+    """
+    args = inner_expr.args
+    if isinstance(args, VAR):
+        return args.name.value, visit(args, data_sources, env, index)
+    env.setdefault('index', []).append(args[1])
+    return args[0].name.value, visit(args[0], data_sources, env, index)
+
+
 def visit_as(as_expr: SQLToken, data_sources, env, index) -> tuple:
     """
     :param index:
@@ -199,13 +227,6 @@ def visit_func(func_expr: SQLToken, data_sources, env, index):
         else:
             args.append(arg)
     return func(*args)
-
-
-def visit_inner(inner_expr: SQLToken, data_sources: dict, env: dict, index):
-    """
-    inner 语句被视为默认的, 直接返回子语句结果
-    """
-    return visit(inner_expr.args, data_sources, env, index)
 
 
 def visit_const(const_expr: CONST, data_sources, env, index):

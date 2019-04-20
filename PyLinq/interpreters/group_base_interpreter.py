@@ -13,8 +13,8 @@ def visit_group(expr, data_sources, env):
     groups = get_groups(expr.group_expr)
     env['groups'] = groups
     res_dict = {}
-    if expr.index_expr:
-        for instance_dict in index_loop(expr, data_sources, env):
+    if 'index' in env:
+        for instance_dict in index_loop(expr, env['index'], data_sources, env):
             pk = tuple(instance_dict[table_name][attr] for table_name, attr in groups)
             res_dict.setdefault(pk, []).append(instance_dict)
     else:
@@ -52,8 +52,8 @@ def _main_loop(used_keys, data_sources, instance_dict, num, data_num):
         used_keys.remove(table_name)
 
 
-def index_loop(expr, data_sources, env):
-    for instance_dict in visit_index(expr, data_sources):
+def index_loop(expr, index_expr, data_sources, env):
+    for instance_dict in visit_index(index_expr, data_sources):
         if data_sources:
             for new_instance_dict in main_loop(data_sources, instance_dict, expr.where_expr, env):
                 yield new_instance_dict
@@ -62,7 +62,7 @@ def index_loop(expr, data_sources, env):
                 yield instance_dict
 
 
-def group_visit_select(select_expr: tuple, instance_dict, env) -> dict:
+def group_visit_select(select_expr: tuple, instance_dict, env):
     """
     :param instance_dict:
     :param env:

@@ -87,3 +87,15 @@ class FuncProxy:
     def get(cls, name):
         func = cls.sql_funcs.get(name, None)
         return None if func is None else func()
+
+
+class QueueProxy:
+    queues = {}
+
+    @classmethod
+    def add(cls, sql_expr: str, queue):
+        cls.queues[sql_expr] = queue
+
+    @classmethod
+    def get(cls, sql_expr: str):
+        return cls.queues.get(sql_expr, None)

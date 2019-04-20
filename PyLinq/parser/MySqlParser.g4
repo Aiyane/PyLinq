@@ -42,7 +42,7 @@ tableSourceItem
 
 // 7
 joinPart
-    : (INNER | CROSS)? JOIN tableSourceItem                         #innerJoin
+    : (INNER | CROSS)? JOIN tableSourceItem (ON expression)?        #innerJoin
     | (LEFT | RIGHT) OUTER? JOIN tableSourceItem
         (
           ON expression
@@ -59,12 +59,7 @@ queryExpression
 // 9
 querySpecification
     : SELECT DISTINCT? selectElements
-      fromClause? orderByClause? limitClause? indexByClause?
-    ;
-
-// 10
-indexByClause
-    : JOIN WITH expression
+      fromClause? orderByClause? limitClause?
     ;
 
 // 12
