@@ -17,28 +17,17 @@ UNKNOWN = namedtuple('unknown', ())
 # 语句集合
 STATES = (FROM, SELECT, VAR, CONST, UNKNOWN)
 # 节点标签
-# NODE = NewType('NODE', int)
-# TABLES = NODE(2)  # tables
-# AS = NODE(3)  # name, str
-# FUNC = NODE(4)  # name, *args
-# CASE = NODE(5)  # [*(condition, consequent)]
-# INNER = NODE(6)  # tableSourceItem
-# OUTER = NODE(7)  # tag, tableSourceItem, expression
-# ORDER = NODE(8)  # tuple(order_by_expressions)
-# DESC = NODE(9)  # expression
-# LIMIT = NODE(10)  # offset, limit
-# LINK = NODE(11)  # select_statement_id
-NODE = NewType('NODE', str)
-TABLES = NODE('tables')  # tables
-AS = NODE('as')  # name, str
-FUNC = NODE('func')  # name, *args
-CASE = NODE('case')  # [*(condition, consequent)]
-INNER = NODE('inner')  # tableSourceItem
-OUTER = NODE('outer')  # tag, tableSourceItem, expression
-ORDER = NODE('order')  # tuple(order_by_expressions)
-DESC = NODE('desc')  # expression
-LIMIT = NODE('limit')  # offset, limit
-LINK = NODE('link')  # select_statement_id
+NODE = NewType('NODE', int)
+TABLES = NODE(2)  # tables
+AS = NODE(3)  # name, str
+FUNC = NODE(4)  # name, *args
+CASE = NODE(5)  # [*(condition, consequent)]
+INNER = NODE(6)  # tableSourceItem
+OUTER = NODE(7)  # tag, tableSourceItem, expression
+ORDER = NODE(8)  # tuple(order_by_expressions)
+DESC = NODE(9)  # expression
+LIMIT = NODE(10)  # offset, limit
+LINK = NODE(11)  # select_statement_id
 # 结果列表
 EXPR = namedtuple('sql_interpreter', (
     'from_expr',
