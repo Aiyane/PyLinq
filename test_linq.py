@@ -405,7 +405,7 @@ class SQLRuleTest(unittest.TestCase):
                                            {'公司': 'xiaomi', 'ID': 4}])
 
     def test_nested_funcs(self):
-        sql = ("(SELECT int(SUM(mobile.id)) AS sum1, mobile.company_id "
+        sql = ("(SELECT int(ISUM(mobile.id)) AS sum1, mobile.company_id "
                "FROM mobile "
                "GROUP BY mobile.company_id)")
         data_source = run(sql, self.data_sources)

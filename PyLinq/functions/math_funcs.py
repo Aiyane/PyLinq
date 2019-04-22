@@ -103,3 +103,14 @@ def sum_wrap():
             logging.warning(f"SumAggr: {e}")
         return s
     return my_sum
+
+
+@register_func("isum")
+def sum_wrap():
+    def my_sum(val):
+        try:
+            return sum(map(float, val)) if isinstance(val, list) else float(val)
+        except TypeError as e:
+            logging.warning(f"SumAggr: {e}")
+        return 0
+    return my_sum
