@@ -8,8 +8,6 @@ from PyLinq.parser.visitor import MySqlVisitor
 from PyLinq.parser.nodes import EXPR
 from PyLinq.decorator import queue_cache
 
-__SQL_ENV__ = {}  # 运行环境
-
 
 # @queue_cache
 def get_sql_queue(sql_expr: str):
@@ -40,13 +38,10 @@ def sql_run(sql_expr: str, data_sources: dict):
         sql_expr = sql_queue.get()
         tree = sql_expr.tree
 
-        # print(tree)
-
         result = sql_interpreter(tree, data_sources, env)
 
         if sql_queue.empty():
             return result
-            # return
 
         env[sql_expr.id] = result
 

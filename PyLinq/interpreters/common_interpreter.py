@@ -114,16 +114,17 @@ def make_name(expr, value):
 
 
 def init_aggfuncs(expr, i=None):
-    if i is not None and isinstance(expr, SQLToken):
-        if expr.tag == AS:
-            sub_expr = expr.args[0]
-            init_aggfuncs(sub_expr, i)
-        elif expr.args[0] in FuncProxy.aggr:
-            agg_funcs[expr.args[0] + str(i)] = FuncProxy.get(expr.args[0])
-            agg_position.add(i)
-    elif isinstance(expr, tuple):
+    if i is None:
         for i, expr in enumerate(expr[2:]):
             init_aggfuncs(expr, i)
+    elif isinstance(expr, SQLToken):
+        if expr.tag == FUNC and expr.args[0] in FuncProxy.aggr:
+            func_name = expr.args[0] + str(i)
+            agg_funcs[func_name] = FuncProxy.get(expr.args[0])
+            agg_position.add(i)
+        else:
+            for sub_expr in expr.args:
+                init_aggfuncs(sub_expr, i)
 
 
 def visit_limit(limit_expr: SQLToken, res: list, env) -> list:
@@ -156,7 +157,7 @@ def visit_tables(tables_expr: SQLToken, data_sources: dict, env: dict, index) ->
 
 def visit_inner(inner_expr: SQLToken, data_sources: dict, env: dict, index) -> tuple:
     """
-    Token(
+    inner_expr: Token(
         tag='inner',
         args=(
             var(name=const(value='mobile'), attr=None, func=None),

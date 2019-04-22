@@ -43,8 +43,6 @@ class MySqlVisitor(MySqlParserVisitor):
         order_by_clause = self.visit(order_by_clause) if order_by_clause else None
         limit_clause = ctx.limitClause()
         limit_clause = self.visit(limit_clause) if limit_clause else None
-        # index_by_clause = ctx.indexByClause()
-        # index_by_clause = self.visit(index_by_clause) if index_by_clause else None
 
         sql_token = SELECT(from_clause, order_by_clause, limit_clause, (distinct, *select_elements))
         tree = SelectStatement(self.get_id(), sql_token)
@@ -84,7 +82,7 @@ class MySqlVisitor(MySqlParserVisitor):
             select_elements.append(self.visit(element))
         return select_elements
 
-    def visitFromClause(self, ctx: MySqlParser.FromClauseContext) -> SQLToken:
+    def visitFromClause(self, ctx: MySqlParser.FromClauseContext) -> tuple:
         """
         FROM tableSources
         (WHERE whereExpr=expression)?
@@ -149,7 +147,6 @@ class MySqlVisitor(MySqlParserVisitor):
         """
         (INNER | CROSS)? JOIN tableSourceItem (ON expression)?
         """
-        # TODO: on 语句
         if ctx.ON():
             return SQLToken(INNER, (self.visit(ctx.tableSourceItem()), self.visit(ctx.expression())))
         return SQLToken(INNER, self.visit(ctx.tableSourceItem()))
@@ -222,8 +219,6 @@ class MySqlVisitor(MySqlParserVisitor):
         """
         ORDER BY orderByExpression (',' orderByExpression)*
         """
-        # order_by_expressions = tuple(self.visit(expression) for expression in ctx.orderByExpression())
-        # return SQLToken(ORDER, order_by_expressions)
         return tuple(self.visit(expression) for expression in ctx.orderByExpression())
 
     def visitOrderByExpression(self, ctx: MySqlParser.OrderByExpressionContext) -> SQLToken:
@@ -319,7 +314,6 @@ class MySqlVisitor(MySqlParserVisitor):
         if ctx.NULL_LITERAL():
             return SQLToken(FUNC, ('not', CONST(None))) if ctx.NOT() else CONST(None)
         return SQLToken(FUNC, ('not', CONST('\n'))) if ctx.NOT() else CONST('\n')
-        # return SQLToken(FUNC, ('not', '\n'), []) if ctx.NOT() else SQLToken(STR, '\n', [])
 
     def visitBinaryComparasionPredicate(self, ctx: MySqlParser.BinaryComparasionPredicateContext) -> SQLToken:
         """

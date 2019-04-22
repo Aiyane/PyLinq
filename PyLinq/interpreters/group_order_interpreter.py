@@ -94,11 +94,9 @@ def _compare(item1, item2, orders):
     """
     for order, table_name, attr in orders:
         for values in item1.values():
-            instance1 = values[0]
-            v1 = instance1[table_name][attr]
             for values2 in item2.values():
-                instance2 = values2[0]
-                v2 = instance2[table_name][attr]
+                v1 = values[0][table_name][attr]
+                v2 = values2[0][table_name][attr]
                 if v1 < v2:
                     return True if order == 0 else False
                 if v1 > v2:
